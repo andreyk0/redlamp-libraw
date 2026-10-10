@@ -324,7 +324,9 @@ def run(mode, only):
         args = [str(BUILD / "opt" / "concurrent"), "8"]
         for s, i in jobs:
             args += [str(nef(s)), str(mos / f"par-{i}-{s['name']}.u16")]
-        subprocess.run(args, capture_output=True)
+        r = subprocess.run(args, capture_output=True, text=True)
+        if r.returncode:
+            fail(f"concurrency: the parallel decodes stopped (exit {r.returncode})")
         for s, i in jobs:
             p = mos / f"par-{i}-{s['name']}.u16"
             if not p.exists() or sha(p) != report["samples"][s["name"]]["sha256"]:

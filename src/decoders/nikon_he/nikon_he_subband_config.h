@@ -88,13 +88,11 @@ struct SubbandConfig {
 //
 // half_pass_W = image_width / 2  (full-res Z9: 8256 → 4128).
 //
-// Populates `out` (26 entries) with ng, x24, priority, buffer_idx,
-// and sets all layout_info pointers to a static LayoutInfo.
+// Populates `out` (26 entries) with ng, x24, priority, buffer_idx, fills
+// `layout`, and points every entry's layout_info at it. The caller owns
+// `layout`, one per decode, so decodes on several threads don't share it.
 //
-// The returned LayoutInfo is valid for the lifetime of the program;
-// subsequent calls overwrite it (not thread-safe across different widths).
-//
-void compute_subband_layout(int half_pass_W, SubbandConfig out[26]);
+void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& layout);
 
 }  // namespace nikon_he
 

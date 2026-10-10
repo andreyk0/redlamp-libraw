@@ -27,8 +27,8 @@ it under the terms of the one of two licenses as you choose:
 //   In  | x0   | Loop body                                              | Out
 //   ----|------|--------------------------------------------------------|----
 //    0  | new  | x2[i] = x0[i]                                          | 1
-//    1  | new  | x2[i] = (x0[i] << 2) - x2[i]                           | 4
-//    2  | new  | x2[i] = x0[i] << 2                                     | 5
+//    1  | new  | x2[i] = (x0[i] * 4) - x2[i]                           | 4
+//    2  | new  | x2[i] = x0[i] * 4                                     | 5
 //    4  | new  | w = x2[i] - x0[i]; x3[i] = (w+1)>>2; x2[i] = x0[i]     | 7
 //    5  | new  | w = x2[i] - 2*x0[i]; x3[i] = (w+1)>>2; x2[i] = x0[i]   | 7
 //    7  | new  | tmp = x3[i]; x1[i] = tmp;
@@ -67,7 +67,7 @@ void ver_lift_lb_step(
 
     case VerLiftState::kInit1:                  // path B step 2
         for (int i = 0; i < n; ++i) {
-            x2[i] = (x0[i] << 2) - x2[i];
+            x2[i] = (x0[i] * 4) - x2[i];
         }
         st.state = VerLiftState::kInit4;
         break;
@@ -83,7 +83,7 @@ void ver_lift_lb_step(
 
     case VerLiftState::kInit2:                  // path A entry (tile 0)
         for (int i = 0; i < n; ++i) {
-            x2[i] = x0[i] << 2;
+            x2[i] = x0[i] * 4;
         }
         st.state = VerLiftState::kState5;
         break;
@@ -109,7 +109,7 @@ void ver_lift_lb_step(
                 int32_t tmp = x3[i];
                 x1_out[i] = tmp;
                 x3[i] = tmp + 2 * x2[i];
-                x2[i] = (x0[i] << 2) - x2[i];
+                x2[i] = (x0[i] * 4) - x2[i];
             }
             st.state = VerLiftState::kState8;
         }

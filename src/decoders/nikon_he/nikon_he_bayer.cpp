@@ -67,7 +67,7 @@ void step1_merge_4_to_2(
             out_L[r * stride_out + c] = lh_predicted
                 - ((ll_hl_sum + p1_row[cp] + p4_prev[c]) >> 3);
 
-            int32_t pred_2x = (lh_predicted + lh_next_predicted) << 1;
+            int32_t pred_2x = (lh_predicted + lh_next_predicted) * 2;
             int32_t hh_predicted = p3_row[c]
                 - ((ll_hl_sum + p4_row[c] + p1_next[c]) >> 3);
             out_H[r * stride_out + c] = hh_predicted + (pred_2x >> 2);

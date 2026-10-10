@@ -29,7 +29,7 @@ static inline int round_up(int x, int m) {
     return ((x + m - 1) / m) * m;
 }
 
-void compute_subband_layout(int half_pass_W, SubbandConfig out[26]) {
+void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& layout_info) {
     // --- Core sizes ---
     int ng_max = (half_pass_W + 7) / 8;   // ceil(W/8)
     int ng_LL  = half_pass_W / 4;
@@ -122,7 +122,7 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26]) {
     int passB_hl_offset[2] = {0, round_up(ng_max, 8)};
 
     // --- Shared LayoutInfo ---
-    static LayoutInfo layout_info;
+    layout_info = LayoutInfo{};
     layout_info.ng_max = ng_max;
     layout_info.ng_LL  = ng_LL;
     std::memcpy(layout_info.ng_lift, ng_lift_for_hl, sizeof(ng_lift_for_hl));

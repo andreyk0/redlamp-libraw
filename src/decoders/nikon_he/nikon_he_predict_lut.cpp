@@ -29,17 +29,14 @@ it under the terms of the one of two licenses as you choose:
 
 #include "nikon_he_predict_lut.h"
 #include <algorithm>
+#include <array>
 
 namespace nikon_he {
 
-const uint8_t* build_prediction_lookup_table() {
-    static uint8_t lut[kPredictionLutSize];
-    static bool built = false;
-
-    if (built) {
-        return lut;
-    }
-
+// Built once; a function-local static's initialisation is thread-safe, so decodes on
+// several threads can share it.
+static std::array<uint8_t, kPredictionLutSize> make_prediction_lookup_table() {
+    std::array<uint8_t, kPredictionLutSize> lut{};
     for (int gtli = 0; gtli < 16; ++gtli) {
         for (int previous_gcli = 0; previous_gcli < 16; ++previous_gcli) {
             int m_top = std::max(previous_gcli, gtli);
@@ -76,8 +73,12 @@ const uint8_t* build_prediction_lookup_table() {
         }
     }
 
-    built = true;
     return lut;
+}
+
+const uint8_t* build_prediction_lookup_table() {
+    static const std::array<uint8_t, kPredictionLutSize> lut = make_prediction_lookup_table();
+    return lut.data();
 }
 
 }  // namespace nikon_he
