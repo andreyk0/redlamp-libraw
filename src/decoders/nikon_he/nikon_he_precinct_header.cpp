@@ -93,7 +93,8 @@ bool parse_precinct_header(const uint8_t* data,
         out.lb_data_bytes[lb] = static_cast<uint32_t>((val >> 35) & 0xFFFFF);
         out.lb_gcli_bytes[lb] = static_cast<uint32_t>((val >> 15) & 0xFFFFF);
         out.lb_sign_bytes[lb] = static_cast<uint32_t>( val        & 0x7FFF);
-        out.lb_sig_bytes [lb] = static_cast<uint32_t>(out.f20);
+        // A set flag selects raw GCLI packets, which carry no significance bytes.
+        out.lb_sig_bytes [lb] = out.lb_f20_sign[lb] ? 0 : static_cast<uint32_t>(out.f20);
 
         cursor += 7;                                 // past mini-header
         out.lb_sig_offset[lb] = static_cast<uint32_t>(cursor);  // sig starts here

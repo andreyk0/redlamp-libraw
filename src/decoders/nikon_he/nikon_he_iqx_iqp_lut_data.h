@@ -114,7 +114,7 @@ inline const int32_t* iqx_iqp_lut() {
         std::array<int32_t, kIqxIqpLutSize> arr{};
         int k = 0;
         for (int i = 0; i < kIqxIqpLutSize; ++i) {
-            while (k < 255 && kIqxIqpBreakpoints[k + 1][0] <= i) ++k;
+            while (k < 254 && kIqxIqpBreakpoints[k + 1][0] <= i) ++k;
             const int xa = kIqxIqpBreakpoints[k][0];
             const int xb = kIqxIqpBreakpoints[k + 1][0];
             const int ya = kIqxIqpBreakpoints[k][1];

@@ -171,9 +171,15 @@ PrecinctDecodeResult decode_precinct(
 
             // 3. Decode GCLIs.
             uint8_t* gcli_out = new uint8_t[ng];
-            decode_gcli_values(sig_reader, gcli_reader, dpb_mode,
-                               ng, gtli, predict_lut,
-                               prev_gcli, gcli_out);
+            if (sizes.lb_f20_sign[lb]) {
+                // Raw GCLI: an absolute four-bit value per group, no prediction.
+                for (int group = 0; group < ng; ++group)
+                    gcli_out[group] = static_cast<uint8_t>(gcli_reader.read_bits(4));
+            } else {
+                decode_gcli_values(sig_reader, gcli_reader, dpb_mode,
+                                   ng, gtli, predict_lut,
+                                   prev_gcli, gcli_out);
+            }
 
             // 4. Unpack coef magnitudes.
             int coeff_count = ng * 4;

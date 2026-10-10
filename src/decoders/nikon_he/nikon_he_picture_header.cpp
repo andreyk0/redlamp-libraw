@@ -86,6 +86,10 @@ bool parse_picture_header(const uint8_t* strip, size_t strip_size,
             out.coeff_group_size        = body[17];
             out.significance_group_size = body[18];
             out.Bw                      = body[19];
+            if (body_len >= 24 + sizeof(out.vendor_tail)) {
+                std::memcpy(out.vendor_tail, body + 24, sizeof(out.vendor_tail));
+                out.has_vendor_tail = true;
+            }
             saw_pih = true;
             break;
         }

@@ -59,6 +59,9 @@ void step1_merge_4_to_2(
             int32_t hh_sum = p3_row[c] + p3_row[cp];
             int32_t lh_predicted = p2_row[c] - ((hh_sum + p3_prev[c] + p3_prev[cp]) >> 3);
             int32_t lh_next_predicted = p2_next[c] - ((hh_sum + p3_next[c] + p3_next[cp]) >> 3);
+            // The image's last row extends the prediction already made, not the clamped source.
+            if (is_last_tile && r == w_rows - 1)
+                lh_next_predicted = lh_predicted;
 
             int32_t ll_hl_sum = p1_row[c] + p4_row[c];
             out_L[r * stride_out + c] = lh_predicted
@@ -84,6 +87,8 @@ void step1_merge_4_to_2(
             int32_t hh_sum = p3_row[c] + p3_row[cp];
             carry_pred = p2_row[c] - ((hh_sum + p3_prev[c] + p3_prev[cp]) >> 3);
             carry_next_pred = p2_next[c] - ((hh_sum + p3_next[c] + p3_next[cp]) >> 3);
+            if (is_last_tile && r == w_rows - 1)
+                carry_next_pred = carry_pred;
         }
 
         // Columns c = 1 .. w_cols - 1
@@ -105,6 +110,8 @@ void step1_merge_4_to_2(
                 - ((hh_col_sum + p3_prev[cp] + p3_prev[c]) >> 3);
             int32_t next_predict = p2_next[c]
                 - ((hh_col_sum + p3_next[c] + p3_next[cp]) >> 3);
+            if (is_last_tile && r == w_rows - 1)
+                next_predict = cur_predict;
 
             int32_t ll_hl_col_sum = p1_row[c] + p4_row[c];
             out_L[r * stride_out + c] = cur_predict

@@ -48,6 +48,11 @@ struct PictureHeader {
     uint8_t  priority[kMaxWgtBands];
 
     bool     has_nlt;
+
+    // Nikon's 13-byte extension past the standard 24-byte PIH payload, which holds
+    // the transfer curve's parameters.
+    bool     has_vendor_tail;
+    uint8_t  vendor_tail[13];
 };
 
 bool parse_picture_header(const uint8_t* strip, size_t strip_size,

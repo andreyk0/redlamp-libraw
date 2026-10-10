@@ -92,13 +92,40 @@ void LibRaw::nikon_he_load_raw()
         throw LIBRAW_EXCEPTION_DECODE_RAW;
     }
 
+    // The transfer curve, from the B, A and C parameters in the picture header's
+    // extension, stored as 4 * raw14 for the decoder's final two-bit shift. Right
+    // shifts are floor divisions, negative values included.
+    const int32_t* lut = nikon_he::iqx_iqp_lut();
+    std::vector<int32_t> transfer;
+    if (ph.has_vendor_tail) {
+        const uint8_t* t = ph.vendor_tail;
+        const int64_t B = ((int64_t)(t[3] & 15) << 8) | t[4];
+        const int64_t A = ((int64_t)(t[7] & 3) << 16) | ((int64_t)t[8] << 8) | t[9];
+        const int64_t C = ((int64_t)t[10] << 8) | t[11];
+        transfer.resize(nikon_he::kIqxIqpLutSize);
+        for (int i = 0; i < nikon_he::kIqxIqpLutSize; ++i) {
+            const int64_t d = (i < 65535 ? i : 65535) - C;
+            int64_t q;
+            if (d < 0) {
+                q = -d * d;
+            } else {
+                const int64_t g = (d * A + 32768) >> 16;
+                q = g * g;
+            }
+            int64_t raw14 = B + ((q + 163840) >> 18);
+            raw14 = raw14 < 0 ? 0 : (raw14 > 16383 ? 16383 : raw14);
+            transfer[i] = (int32_t)(4 * raw14);
+        }
+        lut = transfer.data();
+    }
+
     std::vector<uint16_t> bayer((size_t)img_w * img_h, 0);
     ActivePictureHeaderScope active_header(ph);
     const nikon_he::HeDecodeResult result = nikon_he::decode_nikon_he_image(
         strip.data() + ph.precinct_offset,
         strip.size() - ph.precinct_offset,
         img_w, img_h,
-        nikon_he::iqx_iqp_lut(),
+        lut,
         bayer.data());
 
     if (!result.success) {
