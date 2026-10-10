@@ -32,13 +32,17 @@ Upstream master at `7bfffe2` (9 October 2026), the commit Redlamp pinned before 
 
 ## Keeping up with upstream
 
-Redlamp tracks LibRaw's master. When there's an upstream commit worth adopting (a release, a snapshot, or a fix Redlamp needs):
+Redlamp tracks LibRaw's master, merged into this branch rather than rebased onto it, so every commit Redlamp has pinned stays on the branch and nothing is force-pushed.
 
-1. `git fetch upstream`, then rebase the changes onto it: `git rebase --onto <upstream commit> <the current base> redlamp`. Resolve conflicts in favour of upstream outside `src/decoders/nikon_he*`, keeping each change's intent.
-2. Drop any change upstream now has, and say so in the table above.
+Every Monday the Upstream sync workflow (`.github/workflows/upstream-sync.yml`) merges LibRaw's master into a copy of this branch, runs `bench.py quick` on it and offers the result as the `upstream-sync` pull request, a draft when the bench fails; a merge that conflicts fails the run, which lists the conflicting files. Merging the pull request doesn't change what Redlamp builds. Redlamp's `scripts/release-status.py` says how many of master's commits the pinned commit lacks, so each release asks whether to adopt them.
+
+To adopt upstream's commits:
+
+1. Merge the `upstream-sync` pull request, or by hand: `git fetch upstream && git merge --no-ff upstream/master`. Resolve conflicts in favour of upstream outside `src/decoders/nikon_he*`, keeping each change's intent.
+2. Revert any change upstream now has, and say so in the table above.
 3. Update the base above, run `bench.py full`, and pin the result as above.
 
-When LibRaw's own HE decoder lands on master or in a snapshot, check it with the bench before anything else: on a branch at that upstream commit with only `redlamp/bench/` added, run `bench.py full`. If every sample decodes to its golden (or, with Adobe DNG Converter's references in `redlamp/bench/refs/`, matches Adobe's) and the sanitizer, concurrency and fuzzing checks pass, drop this branch's HE decoder commits at the next rebase, keep the bench, and record the switch here and in Redlamp's tracker (CAM-12, CAM-30). If it doesn't pass, keep ours and record what failed.
+When LibRaw's own HE decoder lands on master or in a snapshot, the merge conflicts in `src/decoders/nikon_he*` or the bench fails; check upstream's decoder with the bench before anything else: on a branch at that upstream commit with only `redlamp/bench/` added, run `bench.py full`. If every sample decodes to its golden (or, with Adobe DNG Converter's references in `redlamp/bench/refs/`, matches Adobe's) and the sanitizer, concurrency and fuzzing checks pass, take upstream's side of the HE decoder in the merge, keep the bench, and record the switch here and in Redlamp's tracker (CAM-12, CAM-30). If it doesn't pass, keep ours and record what failed.
 
 ## Findings not yet shared upstream
 
