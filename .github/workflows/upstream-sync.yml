@@ -1,0 +1,132 @@
+# Merges LibRaw's master into the redlamp branch every week, runs the Nikon HE bench on the
+# result and offers it as the upstream-sync pull request (REDLAMP.md, "Keeping up with upstream").
+# Merging the pull request doesn't change what Redlamp builds: Redlamp pins a commit of its own.
+name: Upstream sync
+
+on:
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      bench_only:
+        description: Run the bench on the redlamp branch as it is, without merging
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: upstream-sync
+
+jobs:
+  sync:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: redlamp
+          fetch-depth: 0
+
+      - name: Fetch LibRaw's master
+        id: upstream
+        run: |
+          git remote add upstream https://github.com/LibRaw/LibRaw.git
+          git fetch --quiet upstream master
+          head=$(git rev-parse --short=7 upstream/master)
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          echo "behind=$(git rev-list --count HEAD..upstream/master)" >> "$GITHUB_OUTPUT"
+          open=$(gh pr list --head upstream-sync --state open --json number -q '.[0].number')
+          if [ -n "$open" ] && git fetch --quiet origin upstream-sync &&
+             git merge-base --is-ancestor upstream/master origin/upstream-sync; then
+            echo "offered=$open" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Nothing new
+        if: (steps.upstream.outputs.behind == '0' || steps.upstream.outputs.offered != '') && !inputs.bench_only
+        run: |
+          if [ -n "${{ steps.upstream.outputs.offered }}" ]; then
+            echo "LibRaw master at ${{ steps.upstream.outputs.head }} is already offered in #${{ steps.upstream.outputs.offered }}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "The redlamp branch already has LibRaw master at ${{ steps.upstream.outputs.head }}." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Merge
+        id: merge
+        if: steps.upstream.outputs.behind != '0' && steps.upstream.outputs.offered == '' && !inputs.bench_only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --quiet -c upstream-sync
+          if ! git merge --no-ff --no-edit -m "Merge LibRaw master at ${{ steps.upstream.outputs.head }}" upstream/master; then
+            {
+              echo "LibRaw master at ${{ steps.upstream.outputs.head }} doesn't merge cleanly. Merge it by hand (REDLAMP.md, \"Keeping up with upstream\"); the conflicts:"
+              echo
+              git diff --name-only --diff-filter=U | sed 's/^/- /'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.merge.outcome == 'success' || inputs.bench_only
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        if: steps.merge.outcome == 'success' || inputs.bench_only
+        with:
+          path: redlamp/bench/cache
+          key: bench-samples-${{ hashFiles('redlamp/bench/samples.json') }}
+
+      - name: Bench
+        id: bench
+        if: steps.merge.outcome == 'success' || inputs.bench_only
+        continue-on-error: true
+        run: |
+          pip install --quiet numpy
+          set -o pipefail
+          python redlamp/bench/bench.py quick 2>&1 | tee bench.txt
+
+      - uses: actions/upload-artifact@v4
+        if: steps.merge.outcome == 'success' || inputs.bench_only
+        with:
+          name: bench-results
+          path: |
+            bench.txt
+            redlamp/bench/results/
+
+      - name: Bench only
+        if: inputs.bench_only
+        run: |
+          tail -20 bench.txt >> "$GITHUB_STEP_SUMMARY"
+          [ "${{ steps.bench.outcome }}" = success ]
+
+      - name: Offer the merge
+        if: steps.merge.outcome == 'success'
+        run: |
+          git push --force origin upstream-sync
+          head=${{ steps.upstream.outputs.head }}
+          if [ "${{ steps.bench.outcome }}" = success ]; then verdict="The bench passed (\`quick\`)."; draft=""; else verdict="**The bench failed**: see the run's summary and its bench-results artifact."; draft="--draft"; fi
+          {
+            echo "Merges LibRaw master at [\`$head\`](https://github.com/LibRaw/LibRaw/commit/$head), ${{ steps.upstream.outputs.behind }} commits, into \`redlamp\`."
+            echo
+            echo "$verdict [The run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+            echo
+            echo "Before Redlamp pins the result: \`redlamp/bench/bench.py full\` on a Mac, then REDLAMP.md's \"How Redlamp pins a commit\". If upstream now has a change in its table, drop ours and say so there. If LibRaw's own HE decoder has landed, follow REDLAMP.md's switch procedure first."
+            echo
+            echo '```'
+            git log --oneline --no-merges HEAD^1..HEAD^2 | head -50
+            echo '```'
+          } > body.md
+          title="Merge LibRaw master at $head"
+          open=$(gh pr list --head upstream-sync --state open --json number -q '.[0].number')
+          if [ -n "$open" ]; then
+            gh pr edit "$open" --title "$title" --body-file body.md
+          elif ! gh pr create --base redlamp --head upstream-sync --title "$title" --body-file body.md $draft; then
+            echo "::warning::Couldn't open the pull request: allow GitHub Actions to create pull requests in Settings › Actions › General. The merge is on the upstream-sync branch."
+          fi
+          cat body.md >> "$GITHUB_STEP_SUMMARY"
+          [ "${{ steps.bench.outcome }}" = success ]

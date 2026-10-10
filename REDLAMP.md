@@ -27,7 +27,7 @@ Upstream master at `7bfffe2` (9 October 2026), the commit Redlamp pinned before 
 ## How Redlamp pins a commit
 
 1. `redlamp/bench/bench.py full` passes on the commit.
-2. Tag it, so that it stays reachable after the branch is rebased and GitHub's archive of it keeps working: `git tag pin-<first 7 of the SHA> && git push origin --tags`.
+2. Tag it, so that GitHub's archive of it keeps working whatever happens to the branch: `git tag pin-<first 7 of the SHA> && git push origin --tags`.
 3. In Redlamp, `config/vendored-libs.json` takes the commit's full SHA as the version, `https://github.com/pdcgomes/redlamp-libraw/archive/<sha>.tar.gz` as the URL and the archive's SHA-256. Then follow "Updating LibRaw" in Redlamp's `docs/raw-pipeline.md`: `FORCE=1 scripts/vendor-libraw.sh`, the decode goldens (only the files the change meant to touch may move), the camera colour goldens, `ProcessStabilityTests` and the camera bench.
 
 ## Keeping up with upstream
