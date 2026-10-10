@@ -54,6 +54,14 @@ void ver_lift_lb_step(
     int32_t* x2 = st.x2_carry;
     int32_t* x3 = st.x3_carry;
 
+    // The tail's rows arrive as nullptr, which only the steady and flush states
+    // take; in any other state the stream ended early, and the decode fails.
+    if (x0 == nullptr && n > 0 && st.state != VerLiftState::kState7 &&
+        st.state != VerLiftState::kState9 && st.state != VerLiftState::kState11) {
+        st.failed = true;
+        return;
+    }
+
     // NOTE: even when n == 0 (memcpy LB), the state STILL advances per the
     // transition table. Loop bodies are no-ops in that case.
 

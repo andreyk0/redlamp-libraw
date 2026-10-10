@@ -1,4 +1,46 @@
 {
+ "Z50_2_16x9_HE_663fd340": {
+  "sha256": "9f3552b1748d50ecef3b0b9c8add56aba8c9318734ac5ceccf1bbd069bd0a700",
+  "raw_width": 5600,
+  "raw_height": 3144,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z50_2_16x9_HEstar_ea847c78": {
+  "sha256": "486fb80e85b62b2efa274ca0cd871e66e9245015b53774515fd67810f7909ec3",
+  "raw_width": 5600,
+  "raw_height": 3144,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z50_2_1x1_HE_99b2a569": {
+  "sha256": "da094caa3aca1da0920e4134a76f761445423090bcc9a965f8fb9032a077a56f",
+  "raw_width": 3728,
+  "raw_height": 3728,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z50_2_1x1_HEstar_605f903e": {
+  "sha256": "e055639a8e37af49ddf7b80cb8b390903857b43ced770d47ffa9853515c779c9",
+  "raw_width": 3728,
+  "raw_height": 3728,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z50_2_3x2_HE_71c12d39": {
+  "sha256": "046f78f95763f43cb9888a40cf2bb2d50c29b8268ca82f000a30516f5da6d846",
+  "raw_width": 5600,
+  "raw_height": 3728,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z50_2_3x2_HEstar_0add1dad": {
+  "sha256": "9c73b6e0be35e9d0951470e35ec3962f7ccd6627d3fba301ea32ca80ef5430f7",
+  "raw_width": 5600,
+  "raw_height": 3728,
+  "black": 1008,
+  "maximum": 16383
+ },
  "Z5_2_16x9_HE_6d087e88": {
   "sha256": "703c7c15f366a52b419319cf7ee1744aacbc6484ba8a4ecaae041b748e333994",
   "raw_width": 6064,

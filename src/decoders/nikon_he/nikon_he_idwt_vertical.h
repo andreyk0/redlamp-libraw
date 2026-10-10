@@ -66,6 +66,7 @@ struct VerLiftStatePerLB {
     int32_t* x2_carry;   // size: lift_LB * 4 (or ng_LL * 4 for memcpy LB)
     int32_t* x3_carry;   // size: lift_LB * 4
     int state;           // phase counter
+    bool failed;         // input ended in a state that needs more rows
 };
 
 // Run one vertical-lift pass for one LB component.

@@ -62,6 +62,10 @@ struct LayoutInfo {
     // passB[0..1]: cumsum for pass B lift LBs.
     int passA_hl_offset[6];
     int passB_hl_offset[2];
+
+    // Bytes of significance flags in each LB's packet (its sub-bands' significance
+    // groups, padded to a byte); a raw-GCLI packet has none.
+    int sig_bytes[8];
 };
 
 // One entry per sub-band (0..25).

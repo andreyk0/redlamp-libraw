@@ -40,16 +40,13 @@ static inline uint32_t read_be(const uint8_t* p, int bytes) {
 
 bool parse_precinct_header(const uint8_t* data,
                            size_t data_size,
-                           int image_width,
+                           const int sig_bytes[kLineBlocksPerPrecinct],
                            PrecinctSizes& out) {
     if (data_size < kMinHeaderPrefix) {
         return false;
     }
 
     std::memset(&out, 0, sizeof(out));
-
-    // f20 derives from the half-pass width = image_width / 2.
-    out.f20 = compute_f20(image_width / 2);
 
     // Bytes 0-2: total_size_minus_12 (24-bit big-endian)
     out.total_size = read_be(data, 3);
@@ -94,7 +91,7 @@ bool parse_precinct_header(const uint8_t* data,
         out.lb_gcli_bytes[lb] = static_cast<uint32_t>((val >> 15) & 0xFFFFF);
         out.lb_sign_bytes[lb] = static_cast<uint32_t>( val        & 0x7FFF);
         // A set flag selects raw GCLI packets, which carry no significance bytes.
-        out.lb_sig_bytes [lb] = out.lb_f20_sign[lb] ? 0 : static_cast<uint32_t>(out.f20);
+        out.lb_sig_bytes [lb] = out.lb_f20_sign[lb] ? 0 : static_cast<uint32_t>(sig_bytes[lb]);
 
         cursor += 7;                                 // past mini-header
         out.lb_sig_offset[lb] = static_cast<uint32_t>(cursor);  // sig starts here

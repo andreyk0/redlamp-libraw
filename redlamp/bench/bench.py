@@ -278,8 +278,12 @@ def run(mode, only):
         if cmp["same_exposure"] and cmp["r"] >= SIMILAR and max(abs(cmp["R_over_G"] - 1),
                                                                  abs(cmp["B_over_G"] - 1)) > BALANCE:
             fail(f"{s['name']}: colour balance against its lossless shot R/G {cmp['R_over_G']:.3f} B/G {cmp['B_over_G']:.3f}")
+        # Reported, not a gate: the only pairs that line up exactly are the Z50 II's, whose
+        # town view has traffic moving between shots, so moved cars stand out as much as a
+        # decoding error does. Its six files are held by their goldens instead.
         if cmp.get("outlier_share", 0) > OUTLIER_SHARE:
-            fail(f"{s['name']}: {cmp['outlier_share']:.2%} of blocks stand out from its aligned lossless shot")
+            report.setdefault("notes", []).append(
+                f"{s['name']}: {cmp['outlier_share']:.2%} of blocks stand out from its aligned lossless shot")
 
     # Adobe DNG Converter's mosaics.
     if mode == "full" and ADOBE.exists():

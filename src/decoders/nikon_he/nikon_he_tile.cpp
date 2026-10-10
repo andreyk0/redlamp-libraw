@@ -99,6 +99,7 @@ TileDecodeResult decode_tile(
                                         : VerLiftState::kInit0;
         ver_st[k].x2_carry = x2_carry.data() + k * lift_st;
         ver_st[k].x3_carry = x3_carry.data() + k * lift_st;
+        ver_st[k].failed = false;
     }
 
     // Per-precinct working buffers.
@@ -132,18 +133,34 @@ TileDecodeResult decode_tile(
     //
     // For ver_lift we feed LB 0/1/3 only (LB 2 is memcpy via memcpy_cursor; n=0
     // ticks its state without reading). Build per-LB x0 pointers per call.
-    auto run_passA_or_B_verlift = [&](const int32_t* h) -> int /*pre_tick*/{
-        const int32_t* x0_lb0 = h + 0;
-        const int32_t* x0_lb1 = h + lift_st;
-        const int32_t* x0_lb3 = h + 2 * lift_st + memcpy_st;
-        const int32_t* x0_per_lb[4] = { x0_lb0, x0_lb1, nullptr, x0_lb3 };
-
-        int pre_tick = ver_st[0].state;
-        int32_t* x1_base = tile_buf.data() + x1_write_offset * passA_stride;
-        run_one_ver_lift_loop(x0_per_lb, x1_base,
+    // A vertical lift tick writes LBs 0, 1 and 3 (lift_st ints each) from x1's
+    // offset; it fails when that would pass tile_buf's end, or when an LB was
+    // given no rows in a state that needs them.
+    auto tick = [&](const int32_t* const x0_per_lb[4]) -> bool {
+        const size_t at = static_cast<size_t>(x1_write_offset) * passA_stride;
+        if (x1_write_offset < 0 || at + 3 * static_cast<size_t>(lift_st) > tile_buf.size())
+            return false;
+        const int pre_tick = ver_st[0].state;
+        run_one_ver_lift_loop(x0_per_lb, tile_buf.data() + at,
                               x2_carry.data(), x3_carry.data(),
                               ver_st, lift_st);
-        return pre_tick;
+        for (int k = 0; k < 4; ++k)
+            if (ver_st[k].failed) return false;
+        if (pre_tick > 5) x1_write_offset += 4;
+        return true;
+    };
+    auto run_passA_or_B_verlift = [&](const int32_t* h) -> bool {
+        const int32_t* x0_per_lb[4] = { h, h + lift_st, nullptr, h + 2 * lift_st + memcpy_st };
+        return tick(x0_per_lb);
+    };
+    // The memcpy LB's LL band goes to tile_buf[memcpy_cursor + 3*kBand].
+    auto copy_ll = [&](const int32_t* h) -> bool {
+        const size_t at = static_cast<size_t>(memcpy_cursor) + 3 * static_cast<size_t>(kBand);
+        if (at + memcpy_st > tile_buf.size()) return false;
+        std::memcpy(tile_buf.data() + at, h + 2 * lift_st,
+                    static_cast<size_t>(memcpy_st) * sizeof(int32_t));
+        memcpy_cursor += stripe_ints;
+        return true;
     };
 
     // --- main per-precinct loop ---
@@ -154,7 +171,7 @@ TileDecodeResult decode_tile(
         PrecinctDecodeResult prec = decode_precinct(
             precinct_data[p], precinct_sizes[p], image_width,
             config, pred_state, predict_lut, bufA.data(), bufB.data());
-        if (!prec.success) break;
+        if (!prec.success) return result;
         result.precincts_decoded++;
 
         // 2. Pass A h1_l12 → h_out (LB-ordered layout).
@@ -165,17 +182,11 @@ TileDecodeResult decode_tile(
 
         // 3. Write LB 2 (memcpy LL) to tile_buf[memcpy_cursor + 3*kBand].
         //    Source = h_out's LB 2 region (= 2*lift_st .. 2*lift_st+memcpy_st).
-        std::memcpy(tile_buf.data() + memcpy_cursor + 3 * kBand,
-                    h_out.data() + 2 * lift_st,
-                    static_cast<size_t>(memcpy_st) * sizeof(int32_t));
-        memcpy_cursor += stripe_ints;
+        if (!copy_ll(h_out.data())) return result;
 
         // 4. ver_lift pass A (skip for path-B prec 0).
         const bool skip_passA_verlift = (!is_first_tile && p == 0);
-        if (!skip_passA_verlift) {
-            int pre_tick = run_passA_or_B_verlift(h_out.data());
-            if (pre_tick > 5) x1_write_offset += 4;
-        }
+        if (!skip_passA_verlift && !run_passA_or_B_verlift(h_out.data())) return result;
 
         // 5. Pass B h1_l12 → h_out.
         std::memset(h_out.data(), 0, h_out.size() * sizeof(int32_t));
@@ -184,29 +195,17 @@ TileDecodeResult decode_tile(
                              h_out.data(), h_work.data());
 
         // 6. LB 6 memcpy.
-        std::memcpy(tile_buf.data() + memcpy_cursor + 3 * kBand,
-                    h_out.data() + 2 * lift_st,
-                    static_cast<size_t>(memcpy_st) * sizeof(int32_t));
-        memcpy_cursor += stripe_ints;
+        if (!copy_ll(h_out.data())) return result;
 
         // 7. ver_lift pass B.
-        {
-            int pre_tick = run_passA_or_B_verlift(h_out.data());
-            if (pre_tick > 5) x1_write_offset += 4;
-        }
+        if (!run_passA_or_B_verlift(h_out.data())) return result;
     }
 
     // Partial-tile tail loop: 2 extra ver_lift calls with x0=NULL.
     // Flushes states 7/8 → 9 → 11 for the last few stripes.
     const int32_t* tail_x0[4] = { nullptr, nullptr, nullptr, nullptr };
-    for (int tail = 0; tail < 2; ++tail) {
-        int pre_tick = ver_st[0].state;
-        int32_t* x1_base = tile_buf.data() + x1_write_offset * passA_stride;
-        run_one_ver_lift_loop(tail_x0, x1_base,
-                              x2_carry.data(), x3_carry.data(),
-                              ver_st, lift_st);
-        if (pre_tick > 5) x1_write_offset += 4;
-    }
+    for (int tail = 0; tail < 2; ++tail)
+        if (!tick(tail_x0)) return result;
 
     // Copy first 32 stripes of tile_buf to tile_coeff_buf at this tile's region.
     int32_t* tile_out = tile_coeff_buf

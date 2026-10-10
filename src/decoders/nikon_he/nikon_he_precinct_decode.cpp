@@ -102,7 +102,7 @@ PrecinctDecodeResult decode_precinct(
 
     // 1. Parse header
     PrecinctSizes sizes;
-    if (!parse_precinct_header(precinct_data, precinct_size, image_width, sizes)) {
+    if (!parse_precinct_header(precinct_data, precinct_size, config[0].layout_info->sig_bytes, sizes)) {
         return result;
     }
 

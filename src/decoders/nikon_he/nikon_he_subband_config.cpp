@@ -33,20 +33,26 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& 
     // --- Core sizes ---
     int ng_max = (half_pass_W + 7) / 8;   // ceil(W/8)
     int ng_LL  = half_pass_W / 4;
-    int N4     = (ng_max + 1) / 2;        // ceil(ng_max / 2)
-    int N5     = (N4 + 1) / 2;            // ceil(N4 / 2)
-    int N_H5   = N4 - N5;
 
-    // Per-sub-band ng for a 5-level lift LB (LBs 0, 1, 3).
-    // Each has 6 sub-bands with these group counts:
+    // Coefficients per band, as JPEG XS's wavelet splits a line: each level's low
+    // band keeps ceil(n / 2) samples and its high band floor(n / 2). A code group
+    // is 4 coefficients.
+    auto groups = [](int coefficients) { return (coefficients + 3) / 4; };
+    int low[6], high[6];
+    low[0] = half_pass_W;
+    high[0] = 0;
+    for (int k = 1; k <= 5; ++k) {
+        high[k] = low[k - 1] / 2;
+        low[k]  = low[k - 1] - high[k];
+    }
+
+    // Per-sub-band ng for a 5-level lift LB (LBs 0, 1, 3): LL5, H5, H4, H3, H2, H1.
     int ng_5level[6] = {
-        (N5     + 3) / 4,   // ceil(N5 / 4)
-        (N_H5   + 3) / 4,   // ceil(N_H5 / 4)
-        (ng_max + 7) / 8,   // ceil(ng_max / 8)
-        (ng_max + 3) / 4,   // ceil(ng_max / 4)
-        (ng_max + 1) / 2,   // ceil(ng_max / 2)
-        ng_max,
+        groups(low[5]), groups(high[5]), groups(high[4]),
+        groups(high[3]), groups(high[2]), groups(high[1]),
     };
+    // A 1-level lift LB (LBs 4, 5, 7): L1, H1.
+    const int ng_1level[2] = { groups(low[1]), groups(high[1]) };
 
     // --- LB region sizes ---
     int memcpy_LB = round_up(ng_LL, 32);
@@ -92,17 +98,17 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& 
         {16, 3, ng_5level[3], 57},
         {17, 3, ng_5level[4], 58},
         {18, 3, ng_5level[5], 59},
-        // LB 4: sb 19-20, priorities 6-7 (1-level lift, ng_max)
-        {19, 4, ng_max,        6},
-        {20, 4, ng_max,        7},
+        // LB 4: sb 19-20, priorities 6-7 (1-level lift)
+        {19, 4, ng_1level[0],  6},
+        {20, 4, ng_1level[1],  7},
         // LB 5: sb 21-22, priorities 24-25
-        {21, 5, ng_max,       24},
-        {22, 5, ng_max,       25},
+        {21, 5, ng_1level[0], 24},
+        {22, 5, ng_1level[1], 25},
         // LB 6: sb 23, priority 36 (memcpy LL)
         {23, 6, ng_LL,        36},
         // LB 7: sb 24-25, priorities 60-61
-        {24, 7, ng_max,       60},
-        {25, 7, ng_max,       61},
+        {24, 7, ng_1level[0], 60},
+        {25, 7, ng_1level[1], 61},
     };
 
     // --- HL offset tables ---
@@ -177,6 +183,14 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& 
             lb_sb_x24[lb] += round_up(d.ng_val, 8);
         }
     }
+
+    // A packet's significance flags: one bit per significance group (8 code groups)
+    // of each of its sub-bands, padded to a whole byte.
+    int sig_bits[8] = {0};
+    for (int i = 0; i < 26; i++)
+        sig_bits[defs[i].lb] += (defs[i].ng_val + 7) / 8;
+    for (int lb = 0; lb < 8; lb++)
+        layout_info.sig_bytes[lb] = (sig_bits[lb] + 7) / 8;
 }
 
 }  // namespace nikon_he
