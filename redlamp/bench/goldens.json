@@ -153,6 +153,13 @@
   "black": 1008,
   "maximum": 16383
  },
+ "Z6_3_3x2_HEstar_4111fa11": {
+  "sha256": "eb1546abec8a945d1dc5113083bd8e64d3cdecdcca1e9b476e63ac3aa487c384",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
  "Z8_3x2_HE_82df0415": {
   "sha256": "a273a25f3b3f99be4c4ded39a8c8646464b92d29e98ceffcb47a4e0dd7b46ae1",
   "raw_width": 8280,

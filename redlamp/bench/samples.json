@@ -1,5 +1,5 @@
 {
- "source": "raw.pixls.us, CC0 (checked 9 October 2026); NEFCompression read from maker-note tag 0x51",
+ "source": "raw.pixls.us, CC0 (checked 9 October 2026), unless a sample names its own source and licence; NEFCompression read from maker-note tag 0x51",
  "samples": [
   {
    "name": "Z9_3x2_HE_be91bac2",
@@ -410,6 +410,23 @@
    "megabytes": 26.23,
    "sha256": "a3314a026524396e603b461afc4fe61a8a5a3958232f3687bb1c8eca0dcbed93",
    "url": "https://raw.pixls.us/getfile.php/7762/nice/Nikon%20-%20Z50_2%20-%208bit%20compressed%20%283:2%29.NEF"
+  },
+  {
+   "name": "Z6_3_3x2_HEstar_4111fa11",
+   "camera": "Z 6III",
+   "model": "Z6_3",
+   "mode": "HE*",
+   "crop": "3:2",
+   "megabytes": 19.4,
+   "sha256": "4111fa11f86a4b3f595999ecf035078944a834ef4283df625b2bb0a968e78946",
+   "url": "https://discuss.pixls.us/uploads/short-url/pRJ75daXsaq4sXrfeu1nIvNqZYv.NEF",
+   "source": "Fenny, \"Beating Nikon High Efficieny NEFs\", discuss.pixls.us (https://discuss.pixls.us/t/beating-nikon-high-efficieny-nefs/59347), 20 July 2026",
+   "licence": "CC BY-SA 4.0",
+   "adobe": {
+    "url": "https://discuss.pixls.us/uploads/short-url/1HYsrQs0bWnCHt3MSdAyYOEPR3X.dng",
+    "sha256": "42786ae1becd9bc9978ff029c53143ad8bc294d6de08cb8f2161e941c6553708",
+    "converter": "Adobe DNG Converter 18, run by the photographer"
+   }
   }
  ]
 }

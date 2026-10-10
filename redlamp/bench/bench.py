@@ -68,17 +68,21 @@ def nef(s):
 
 def fetch():
     CACHE.mkdir(exist_ok=True)
+    REFS.mkdir(exist_ok=True)
     for s in samples():
-        path = nef(s)
-        if path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() == s["sha256"]:
-            continue
-        data = urllib.request.urlopen(urllib.request.Request(s["url"], headers={"User-Agent": "redlamp-bench"}),
-                                      timeout=300).read()
-        if hashlib.sha256(data).hexdigest() != s["sha256"]:
-            sys.exit(f"{s['name']}: checksum mismatch")
-        path.write_bytes(data)
-        print("fetched", s["name"], flush=True)
-        time.sleep(1)  # raw.pixls.us is run by volunteers
+        files = [(nef(s), s["url"], s["sha256"])]
+        if "adobe" in s:
+            files.append((REFS / f"{s['name']}.dng", s["adobe"]["url"], s["adobe"]["sha256"]))
+        for path, url, sha256 in files:
+            if path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() == sha256:
+                continue
+            data = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "redlamp-bench"}),
+                                          timeout=300).read()
+            if hashlib.sha256(data).hexdigest() != sha256:
+                sys.exit(f"{path.name}: checksum mismatch")
+            path.write_bytes(data)
+            print("fetched", path.name, flush=True)
+            time.sleep(1)  # raw.pixls.us and discuss.pixls.us are run by volunteers
 
 
 def lib_sources():

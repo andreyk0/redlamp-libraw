@@ -18,11 +18,11 @@ Upstream master at `7bfffe2` (9 October 2026), the commit Redlamp pinned before 
 | The Z50 II, and failed precincts | `5da35f3` | Significance lengths and band sizes follow JPEG XS instead of fits that broke at the Z50 II's widths; a failed precinct fails the decode instead of crashing | — |
 | Malformed streams | `fedabb2` | Bounded table lookups, saturating arithmetic, checked slice headers, unverified geometries refused; the decoder no longer flagged unsupported | — |
 | Camera list | `f3d2bc3` | The Z 6III, Z 8, Z 9 and Z f without the note that HE and HE* aren't supported | — |
-| The bench | `redlamp/bench/` | Checks the decoder on CC0 samples of every body that writes HE files | — |
+| The bench | `redlamp/bench/` | Checks the decoder on samples of every body that writes HE files, and against Adobe DNG Converter's decode | — |
 
 ## The bench
 
-`redlamp/bench/` checks the HE decoder against the 41 CC0 samples [raw.pixls.us](https://raw.pixls.us) has from the six bodies that write HE files (`redlamp/bench/README.md`). Every change to the decoder passes `redlamp/bench/bench.py quick` with the recorded goldens unchanged, and `full` before Redlamp pins it.
+`redlamp/bench/` checks the HE decoder against the 41 CC0 samples [raw.pixls.us](https://raw.pixls.us) has from the six bodies that write HE files, and a Z 6III HE* file whose decode matches Adobe DNG Converter's in every photosite (`redlamp/bench/README.md`). Every change to the decoder passes `redlamp/bench/bench.py quick` with the recorded goldens unchanged, and `full` before Redlamp pins it.
 
 ## How Redlamp pins a commit
 
