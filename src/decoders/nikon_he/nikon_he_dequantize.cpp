@@ -20,9 +20,16 @@ it under the terms of the one of two licenses as you choose:
 // See nikon_he_dequantize.h for the public API.
 
 #include "nikon_he_dequantize.h"
+#include <cstdint>
 #include <cstdlib>
 
 namespace nikon_he {
+
+// A valid stream's coefficients stay far inside int32; a malformed one is clamped
+// rather than overflowing.
+static inline int32_t saturate(int64_t v) {
+    return v > INT32_MAX ? INT32_MAX : (v < -INT32_MAX ? -INT32_MAX : static_cast<int32_t>(v));
+}
 
 int32_t dequantize_coefficient(int32_t coefficient,
                                int gcli,
@@ -43,8 +50,7 @@ int32_t dequantize_coefficient(int32_t coefficient,
     uint32_t magnitude = static_cast<uint32_t>(std::abs(coefficient)) >> gtli;
     uint64_t product = static_cast<uint64_t>(magnitude)
                      * static_cast<uint64_t>(kMidpointScaleTable[bit_plane_count - 1]);
-    int32_t shifted = static_cast<int32_t>(product >> (16 - gtli));
-    int32_t result  = shifted << kW4Shift;
+    const int32_t result = saturate((static_cast<int64_t>(product >> (16 - gtli))) * (1 << kW4Shift));
     return (coefficient < 0) ? -result : result;
 }
 
@@ -55,8 +61,8 @@ int32_t dequantize_ll_coefficient(int32_t coefficient,
         return 0;
     }
     uint32_t magnitude = static_cast<uint32_t>(std::abs(coefficient)) >> gtli;
-    int32_t factor = (1 << kW4Shift) + 1;          // = 17
-    int32_t result = static_cast<int32_t>(magnitude) * factor << kW4Shift;
+    const int64_t factor = (1 << kW4Shift) + 1;    // = 17
+    const int32_t result = saturate(static_cast<int64_t>(magnitude) * factor * (1 << kW4Shift));
     return (coefficient < 0) ? -result : result;
 }
 

@@ -36,7 +36,7 @@ it under the terms of the one of two licenses as you choose:
 
 namespace nikon_he {
 
-void decode_gcli_values(
+bool decode_gcli_values(
     BitReader& sig_reader,
     BitReader& gcli_reader,
     int mode,
@@ -69,6 +69,7 @@ void decode_gcli_values(
                 // predict(gtli, prev, 0) = max(prev, gtli).
                 for (int i = 0; i < block_size; ++i) {
                     int prev = previous_gcli[base + i];
+                    if (prev > kMaxGcli) return false;
                     gcli_output[base + i] = static_cast<uint8_t>(std::max(prev, gtli));
                 }
             }
@@ -79,6 +80,7 @@ void decode_gcli_values(
                 // Zero-prediction: gcli = gtli + unary_code.
                 for (int i = 0; i < block_size; ++i) {
                     uint32_t u = gcli_reader.read_unary();
+                    if (u > static_cast<uint32_t>(kMaxGcli - gtli)) return false;
                     gcli_output[base + i] = static_cast<uint8_t>(gtli + u);
                 }
             } else {
@@ -86,11 +88,14 @@ void decode_gcli_values(
                 for (int i = 0; i < block_size; ++i) {
                     uint32_t u = gcli_reader.read_unary();
                     int prev = previous_gcli[base + i];
-                    gcli_output[base + i] = lookup_prediction(predict_lut, gtli, prev, static_cast<int>(u));
+                    uint8_t gcli = lookup_prediction(predict_lut, gtli, prev, u > 31 ? 32 : static_cast<int>(u));
+                    if (gcli == kPredictionLutSentinel || gcli > kMaxGcli) return false;
+                    gcli_output[base + i] = gcli;
                 }
             }
         }
     }
+    return true;
 }
 
 }  // namespace nikon_he

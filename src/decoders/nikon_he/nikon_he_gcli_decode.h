@@ -55,7 +55,12 @@ namespace nikon_he {
 //                    for mode 0x71: ignored, pass nullptr
 //   gcli_output   — output buffer of at least num_groups uint8_t entries
 //
-void decode_gcli_values(
+// The largest GCLI a valid stream carries: a 15-bit-plane refinement over a GTLI of 15.
+constexpr int kMaxGcli = 30;
+
+// Returns false when the stream asks for a GCLI the prediction can't give, or one
+// above kMaxGcli; the precinct is then malformed.
+bool decode_gcli_values(
     BitReader& sig_reader,
     BitReader& gcli_reader,
     int mode,

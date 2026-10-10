@@ -52,6 +52,10 @@ inline uint8_t lookup_prediction(const uint8_t* lut,
                                   int gtli,
                                   int previous_gcli,
                                   int unary_code) {
+    // The table covers GTLIs and previous GCLIs of 0 to 15 and unary codes of 0 to 31.
+    if (gtli < 0 || gtli > 15 || previous_gcli < 0 || previous_gcli > 15 ||
+        unary_code < 0 || unary_code > 31)
+        return kPredictionLutSentinel;
     int index = (gtli << 9) | (previous_gcli << 5) | unary_code;
     return lut[index];
 }

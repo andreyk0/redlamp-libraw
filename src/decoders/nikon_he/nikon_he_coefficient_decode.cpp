@@ -43,7 +43,9 @@ void unpack_coefficient_magnitudes(
 
         // Assemble magnitudes bit-plane by bit-plane, MSB first.
         // Each nibble encodes one bit-plane: bits 3,2,1,0 → coefficients 0,1,2,3.
-        int32_t m[4] = {0, 0, 0, 0};
+        // Unsigned: decode_gcli_values keeps GCLIs to 30, so a magnitude stays
+        // below 2^30, but a malformed stream mustn't make the arithmetic undefined.
+        uint32_t m[4] = {0, 0, 0, 0};
 
         for (int bp = 0; bp < num_bitplanes; ++bp) {
             uint32_t nibble = data_reader.read_bits(4);
@@ -55,10 +57,8 @@ void unpack_coefficient_magnitudes(
         }
 
         // Shift in the implicit-zero low bits (truncated at encode time).
-        coefficients_out[g * 4 + 0] = m[0] << gtli;
-        coefficients_out[g * 4 + 1] = m[1] << gtli;
-        coefficients_out[g * 4 + 2] = m[2] << gtli;
-        coefficients_out[g * 4 + 3] = m[3] << gtli;
+        for (int i = 0; i < 4; ++i)
+            coefficients_out[g * 4 + i] = static_cast<int32_t>((m[i] << gtli) & 0x7FFFFFFFu);
     }
 }
 

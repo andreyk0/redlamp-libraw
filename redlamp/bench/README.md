@@ -20,7 +20,7 @@ Both fetch the samples (`samples.json`, checked against their SHA-256) into `cac
 | Adobe | Identical to Adobe DNG Converter's uncompressed mosaic, wherever `refs/` holds one; `full` makes them when the converter is installed | Where present | All |
 | Sanitizers | No AddressSanitizer or UndefinedBehaviorSanitizer report | The smallest HE and HE* file per body | All 41 |
 | Concurrency | One file of each size, decoded twice over on 8 threads at once, equals its serial decode | Yes | Yes |
-| Fuzzing | No crash in runs of mutated files (headers and data of the JPEG XS stream), each run from its own generator seed | 2 seeds × 2 runs × 50 | 4 seeds × 8 runs × 500 |
+| Fuzzing | No crash and no sanitizer report in runs of mutated files (headers and data of the JPEG XS stream), each run from its own generator seed; a malformed file must fail to decode, not crash | 2 seeds × 2 runs × 50 | 4 seeds × 8 runs × 500 |
 
 `full` also draws, for each body, a crop of its smallest HE file beside its lossless shot (`sheet-<body>.png`), and the report has each decode's time.
 

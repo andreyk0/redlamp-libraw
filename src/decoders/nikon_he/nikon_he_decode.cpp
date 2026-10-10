@@ -100,8 +100,13 @@ HeDecodeResult decode_nikon_he_image(
         remaining -= sz + 12;
         n_walked++;
 
-        // 6-byte alignment pad after every 16th file precinct (index 15,31,...)
+        // Every 16th precinct ends a slice; the next opens with JPEG XS's 6-byte
+        // slice header: SLH (FF20), its length (4) and the slice's index.
         if ((p & 0xF) == 15 && remaining >= 6) {
+            const uint32_t slice = static_cast<uint32_t>((p + 1) / 16);
+            if (cursor[0] != 0xFF || cursor[1] != 0x20 || cursor[2] != 0 || cursor[3] != 4 ||
+                ((static_cast<uint32_t>(cursor[4]) << 8) | cursor[5]) != slice)
+                break;
             cursor += 6;
             remaining -= 6;
         }

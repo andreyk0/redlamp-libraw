@@ -347,13 +347,16 @@ def run(mode, only):
         name, seed = task
         r = subprocess.run([str(BUILD / "san" / "fuzz_he"), str(CACHE / f"{name}.NEF"), str(iterations), str(seed)],
                            capture_output=True, text=True, env={**os.environ, **SAN_ENV})
-        if r.returncode == 0:
+        ub = re.search(r"(src/\S+): runtime error: ([^\n]{0,80})", r.stderr)
+        if r.returncode == 0 and not ub:
             return None
-        last = re.findall(r"iteration (\d+)", r.stderr)
+        # An undefined-behaviour report doesn't stop the run; the iteration before it names the file.
+        last = re.findall(r"iteration (\d+)", r.stderr[:ub.start()] if ub and r.returncode == 0 else r.stderr)
         kind = re.search(r"ERROR: AddressSanitizer: ([\w-]+)", r.stderr)
         frame = re.search(r"#0 0x[0-9a-f]+ in (\S+)", r.stderr)
         crash = {"sample": name, "seed": seed, "iteration": int(last[-1]) if last else None,
-                 "error": kind.group(1) if kind else f"exit {r.returncode}", "frame": frame.group(1) if frame else None}
+                 "error": kind.group(1) if kind else (f"undefined behaviour: {ub.group(2)}" if ub else f"exit {r.returncode}"),
+                 "frame": frame.group(1) if frame else (ub.group(1) if ub else None)}
         (out / f"fuzz-{name}-{seed}.txt").write_text(r.stderr[-20000:])
         return crash
 

@@ -58,6 +58,11 @@ void LibRaw::nikon_he_load_raw()
     if (img_w <= 0 || img_h <= 0 || (img_w & 1)) {
         throw LIBRAW_EXCEPTION_DECODE_RAW;
     }
+    // The layout takes whole code groups per line (half the width a multiple of 4),
+    // as every body's files have; anything else hasn't been checked.
+    if ((img_w / 2) % 4 != 0 || img_w < 64 || img_h < 64) {
+        throw LIBRAW_EXCEPTION_UNSUPPORTED_FORMAT;
+    }
 
     const unsigned nef_compression = imgdata.makernotes.nikon.NEFCompression;
     if (nef_compression != kNefCompressionHe &&
@@ -94,10 +99,13 @@ void LibRaw::nikon_he_load_raw()
 
     // The transfer curve, from the B, A and C parameters in the picture header's
     // extension, stored as 4 * raw14 for the decoder's final two-bit shift. Right
-    // shifts are floor divisions, negative values included.
-    const int32_t* lut = nikon_he::iqx_iqp_lut();
+    // shifts are floor divisions, negative values included. A stream without the
+    // extension isn't one of Nikon's.
+    if (!ph.has_vendor_tail) {
+        throw LIBRAW_EXCEPTION_UNSUPPORTED_FORMAT;
+    }
     std::vector<int32_t> transfer;
-    if (ph.has_vendor_tail) {
+    {
         const uint8_t* t = ph.vendor_tail;
         const int64_t B = ((int64_t)(t[3] & 15) << 8) | t[4];
         const int64_t A = ((int64_t)(t[7] & 3) << 16) | ((int64_t)t[8] << 8) | t[9];
@@ -116,8 +124,8 @@ void LibRaw::nikon_he_load_raw()
             raw14 = raw14 < 0 ? 0 : (raw14 > 16383 ? 16383 : raw14);
             transfer[i] = (int32_t)(4 * raw14);
         }
-        lut = transfer.data();
     }
+    const int32_t* lut = transfer.data();
 
     std::vector<uint16_t> bayer((size_t)img_w * img_h, 0);
     ActivePictureHeaderScope active_header(ph);
