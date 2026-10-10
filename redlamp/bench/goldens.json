@@ -1,0 +1,156 @@
+{
+ "Z5_2_16x9_HE_6d087e88": {
+  "sha256": "703c7c15f366a52b419319cf7ee1744aacbc6484ba8a4ecaae041b748e333994",
+  "raw_width": 6064,
+  "raw_height": 3416,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_16x9_HEstar_06069e1c": {
+  "sha256": "a16e52433efac5c942a09e7d098c099f84a6087197448531d30aba28ea75dbdb",
+  "raw_width": 6064,
+  "raw_height": 3416,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_1x1_HE_465aba7a": {
+  "sha256": "1d642854161456fe4c927328bfa60d378403b7ae97282d0a18538be37464c844",
+  "raw_width": 4048,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_1x1_HEstar_a605497e": {
+  "sha256": "9014140fd54c00c7fa2a5ef8c6309d16694995849f1b11c298da2adb87d5a1ad",
+  "raw_width": 4048,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_3x2_HE_196971ea": {
+  "sha256": "090d6e66ca9b65997120b129492f07fd977b2948e6a8d501c79e89c1dd43c0a2",
+  "raw_width": 4000,
+  "raw_height": 2672,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_3x2_HE_d8938c5d": {
+  "sha256": "cc8439d8ac026c9f4e085a40e1b364bb82690bd91ed4d4ec924bb3979073a6e5",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_3x2_HEstar_276ef4ad": {
+  "sha256": "d59e7ea4250ff32d1152265126e5ed22987d3e71e3b2d4f1ceca87dada5fee0b",
+  "raw_width": 4000,
+  "raw_height": 2672,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z5_2_3x2_HEstar_b44bb317": {
+  "sha256": "2e0248af6a801d2586d0089b69836dd00b8059dae01d75c41ae5e4e37f4a6804",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_16x9_HE_890e6bf9": {
+  "sha256": "6c56878b48e6d0c481bd7fb9a4f14efc3a3bc65a1a0f0a14bf0292174450866c",
+  "raw_width": 6064,
+  "raw_height": 3416,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_16x9_HEstar_b8449921": {
+  "sha256": "d5a5380e2b22bf5f2765d7fa5c478342dd323dc0aeaedfca8ddb776d718649e3",
+  "raw_width": 6064,
+  "raw_height": 3416,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_1x1_HE_da2fd1a2": {
+  "sha256": "0ad89618eb9d7de52383ce5d9be58cb7c10671cbea604343c662db5fc23a4cb4",
+  "raw_width": 4048,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_1x1_HEstar_b026ebf6": {
+  "sha256": "36c769b2a70201ff51efdce3732a269e002b316f1d7187955c4b37437c79cd51",
+  "raw_width": 4048,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_3x2_HE_9ae7346a": {
+  "sha256": "86129de7c4038a647ea70ce75bceeda057a1bd979cbac204111a9a3c4b77a964",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_3x2_HE_a8fa2cac": {
+  "sha256": "aed484eb6349cbfad85dfa842713bd7ea4ba5d7c31ce457ba115f0f92dc43a26",
+  "raw_width": 4000,
+  "raw_height": 2672,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_3x2_HEstar_10eea355": {
+  "sha256": "cb24120adb87e3361f374df47dacd95856e278a4146d92ed0cbf42964922d6f7",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z6_3_3x2_HEstar_1c7be7b9": {
+  "sha256": "38b3eb13ff682d548e0b80fee9fc0cdfd637e6419120e21f0023137af8b309b9",
+  "raw_width": 4000,
+  "raw_height": 2672,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z8_3x2_HE_82df0415": {
+  "sha256": "a273a25f3b3f99be4c4ded39a8c8646464b92d29e98ceffcb47a4e0dd7b46ae1",
+  "raw_width": 8280,
+  "raw_height": 5520,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z8_3x2_HEstar_ea8b093c": {
+  "sha256": "e4c31118fad3aa09ecf221fdaf1e9e3cb5c9a58e9a6859b902af8ac704bc8ab4",
+  "raw_width": 8280,
+  "raw_height": 5520,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z9_3x2_HE_be91bac2": {
+  "sha256": "d6540f56eed3c5ea46425be9823591289e6461aeb0f8824a2c9342182c768206",
+  "raw_width": 8280,
+  "raw_height": 5520,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Z9_3x2_HEstar_e113deb3": {
+  "sha256": "4fe6c59e56b3b9b148d6a06e3542b19be78b14e82e6df9ce7eef62ca4a97abfa",
+  "raw_width": 8280,
+  "raw_height": 5520,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Zf_3x2_HE_98d6ca8e": {
+  "sha256": "e42a53f4278285e97525d32f806cf2d273608c59fc0d5114b6bf5cf3e1b17764",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ },
+ "Zf_3x2_HEstar_c888f109": {
+  "sha256": "27a14dec4a9003383e0fd54d3d782b56f64281b493632b199cf552cbc37b3316",
+  "raw_width": 6064,
+  "raw_height": 4040,
+  "black": 1008,
+  "maximum": 16383
+ }
+}
