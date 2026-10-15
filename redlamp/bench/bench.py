@@ -11,7 +11,7 @@
 Checks: every HE and HE* sample decodes; mosaics match their goldens; colour balance and
 detail against the same body's lossless shot; Adobe DNG Converter's output, photosite by
 photosite, where refs/ has it (full makes it when the converter is installed); the
-sanitizers; parallel decodes against serial ones; seeded fuzzing; speed; and a sheet of
+sanitizers; parallel decodes against serial ones, and under ThreadSanitizer; seeded fuzzing; speed; and a sheet of
 crops beside the lossless shots (full). Results go to results/<time>/report.json.
 LibRaw is built as Redlamp builds it: Makefile.dist's LIB_OBJECTS, reentrant.
 """
@@ -37,10 +37,12 @@ CACHE, BUILD, RESULTS, REFS = BENCH / "cache", BENCH / "build", BENCH / "results
 FLAGS = {
     "opt": "-std=c++17 -O3 -w -DUSE_ZLIB -DLIBRAW_NODLL",
     "san": "-std=c++17 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -w -DUSE_ZLIB -DLIBRAW_NODLL",
+    "tsan": "-std=c++17 -O1 -g -fno-omit-frame-pointer -fsanitize=thread -w -DUSE_ZLIB -DLIBRAW_NODLL",
 }
 TOOLS = ("dump_raw", "fuzz_he", "concurrent")
 ADOBE = pathlib.Path("/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter")
 SAN_ENV = {"ASAN_OPTIONS": "halt_on_error=1:detect_leaks=0", "UBSAN_OPTIONS": "print_stacktrace=1:report_error_type=1"}
+TSAN_ENV = {"TSAN_OPTIONS": "halt_on_error=0"}
 # Gates. Colour balance: red's and blue's gain over green against the lossless shot, for pairs
 # shot at the same exposure whose block means correlate at least SIMILAR (the Z 6III's leaves
 # move between shots). Detail: on pairs that line up exactly (no shift, correlation of at
@@ -105,7 +107,7 @@ def stale(obj, dep):
     return any(not pathlib.Path(f).exists() or pathlib.Path(f).stat().st_mtime > built for f in files)
 
 
-def build(variants=("opt", "san")):
+def build(variants=("opt", "san", "tsan")):
     jobs = os.cpu_count() // 2 or 1
     for variant in variants:
         out = BUILD / variant
@@ -340,6 +342,24 @@ def run(mode, only):
             if not p.exists() or sha(p) != report["samples"][s["name"]]["sha256"]:
                 fail(f"{s['name']}: a parallel decode differs from the serial one")
         print(f"concurrency: {len(jobs)} decodes on 8 threads", flush=True)
+
+        # Again with ThreadSanitizer, which reports memory two threads share unordered even when
+        # this run's timing left every mosaic right.
+        args = [str(BUILD / "tsan" / "concurrent"), "8"]
+        for s, _ in jobs:
+            args += [str(nef(s)), os.devnull]
+        r = subprocess.run(args, capture_output=True, text=True, env={**os.environ, **TSAN_ENV})
+        races = re.findall(r"WARNING: ThreadSanitizer: ([^(\n]+?) \(pid", r.stderr)
+        report["data_races"] = len(races)
+        if races:
+            (out / "tsan.txt").write_text(r.stderr)
+            first = r.stderr.split("WARNING: ThreadSanitizer:")[1]
+            where = re.search(r"Location is (.+?)(?: at 0x\S+.*)?$", first, re.M) or re.search(r"#0 (\S+)", first)
+            fail(f"data races: {len(races)} ThreadSanitizer reports, the first a {races[0]} "
+                 f"in {where.group(1) if where else 'an unknown place'}")
+        elif r.returncode:
+            fail(f"data races: the decodes under ThreadSanitizer stopped (exit {r.returncode})")
+        print(f"data races: {len(races)} in {len(jobs)} decodes on 8 threads", flush=True)
 
     # Fuzzing.
     seeds, runs, iterations = FUZZ[mode]

@@ -7,7 +7,7 @@ redlamp/bench/bench.py quick   # after every change to the decoder: a few minute
 redlamp/bench/bench.py full    # before Redlamp pins a commit: about an hour
 ```
 
-Both fetch the samples (`samples.json`, checked against their SHA-256) into `cache/`, build LibRaw as Redlamp builds it (the sources in `Makefile.dist`'s `LIB_OBJECTS`, reentrant, `-O3`) and again with AddressSanitizer and UndefinedBehaviorSanitizer into `build/`, and write `results/<mode>-<time>/report.json`. They exit with 1 when a check fails, and list the failures.
+Both fetch the samples (`samples.json`, checked against their SHA-256) into `cache/`, build LibRaw as Redlamp builds it (the sources in `Makefile.dist`'s `LIB_OBJECTS`, reentrant, `-O3`), again with AddressSanitizer and UndefinedBehaviorSanitizer, and again with ThreadSanitizer, into `build/`, and write `results/<mode>-<time>/report.json`. They exit with 1 when a check fails, and list the failures.
 
 ## The checks
 
@@ -20,6 +20,7 @@ Both fetch the samples (`samples.json`, checked against their SHA-256) into `cac
 | Adobe | Identical to Adobe DNG Converter's uncompressed mosaic, wherever `refs/` holds one: a sample's `adobe` entry is fetched there, and `full` makes the rest when the converter is installed | Where present | All |
 | Sanitizers | No AddressSanitizer or UndefinedBehaviorSanitizer report | The smallest HE and HE* file per body | All 41 |
 | Concurrency | One file of each size, decoded twice over on 8 threads at once, equals its serial decode | Yes | Yes |
+| Data races | No ThreadSanitizer report while the same decodes run again, built with it: it finds memory two threads share unordered even when a run's timing leaves every mosaic right, such as identifications sharing `GetNormalizedModel`'s alias pointer | Yes | Yes |
 | Fuzzing | No crash and no sanitizer report in runs of mutated files (headers and data of the JPEG XS stream), each run from its own generator seed; a malformed file must fail to decode, not crash | 2 seeds × 2 runs × 50 | 4 seeds × 8 runs × 500 |
 
 `full` also draws, for each body, a crop of its smallest HE file beside its lossless shot (`sheet-<body>.png`), and the report has each decode's time.
