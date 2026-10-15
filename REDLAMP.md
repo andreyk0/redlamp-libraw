@@ -18,7 +18,7 @@ Upstream master at `7bfffe2` (9 October 2026), the commit Redlamp pinned before 
 | The Z50 II, and failed precincts | `5da35f3` | Significance lengths and band sizes follow JPEG XS instead of fits that broke at the Z50 II's widths; a failed precinct fails the decode instead of crashing | — |
 | Malformed streams | `fedabb2` | Bounded table lookups, saturating arithmetic, checked slice headers, unverified geometries refused; the decoder no longer flagged unsupported | — |
 | Camera list | `f3d2bc3` | The Z 6III, Z 8, Z 9 and Z f without the note that HE and HE* aren't supported | — |
-| Model aliases, reentrant | `2a32db1` | `GetNormalizedModel` kept the alias it was matching in a static every LibRaw in a process shares, so identifications running at once could copy another camera's alias: Redlamp's decode service once named an OM-1 Mark II's model COOLPIX 900 ([pdcgomes/redlamp#444](https://github.com/pdcgomes/redlamp/issues/444)) | — |
+| Model aliases, reentrant | `2a32db1` | `GetNormalizedModel` kept the alias it was matching in a static every LibRaw in a process shares, so identifications running at once could copy another camera's alias: Redlamp's decode service once named an OM-1 Mark II's model COOLPIX 900 ([pdcgomes/redlamp#444](https://github.com/pdcgomes/redlamp/issues/444)) | Fixed on master in [`1a8fd32`](https://github.com/LibRaw/LibRaw/commit/1a8fd32ed6) (15 October 2026), on the same line. The line here now reads as master's, so master merges without a conflict; the row goes with that merge |
 | The bench | `redlamp/bench/` | Checks the decoder on samples of every body that writes HE files, against Adobe DNG Converter's decode, and for data races under ThreadSanitizer (`c6f39d6`) | — |
 
 ## The bench
@@ -47,4 +47,4 @@ When LibRaw's own HE decoder lands on master or in a snapshot, the merge conflic
 
 ## Findings not yet shared upstream
 
-These are for the owner to post, or not: on LibRaw#826, the Z50 II's crash and corruption and their causes, the static layout's race, and the fuzzing crash in `ver_lift_lb_step`, with the fixes above; on [dnglab#835](https://github.com/dnglab/dnglab/pull/835), its red 4.5% to 8.9% too strong against lossless shots of the same scenes; and to LibRaw, the race on `GetNormalizedModel`'s static alias pointer, whose one-line fix (`2a32db1`) applies to master as it is.
+These are for the owner to post, or not: on LibRaw#826, the Z50 II's crash and corruption and their causes, the static layout's race, and the fuzzing crash in `ver_lift_lb_step`, with the fixes above; on [dnglab#835](https://github.com/dnglab/dnglab/pull/835), its red 4.5% to 8.9% too strong against lossless shots of the same scenes. The race on `GetNormalizedModel`'s static alias pointer needs no post: master fixed it in `1a8fd32`.
