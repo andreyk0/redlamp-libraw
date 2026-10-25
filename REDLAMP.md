@@ -6,7 +6,7 @@ Redlamp tracks this branch as tracker row CAM-30 ([pdcgomes/redlamp#367](https:/
 
 ## Base
 
-Upstream master at `7bfffe2` (9 October 2026), the commit Redlamp pinned before this fork (CAM-13).
+Upstream master at `2caab57` (20 October 2026), merged on 25 October 2026 in `8a064e1`. The branch began at master's `7bfffe2` (9 October 2026), the commit Redlamp pinned before this fork (CAM-13).
 
 ## Changes from upstream
 
@@ -18,8 +18,9 @@ Upstream master at `7bfffe2` (9 October 2026), the commit Redlamp pinned before 
 | The Z50 II, and failed precincts | `5da35f3` | Significance lengths and band sizes follow JPEG XS instead of fits that broke at the Z50 II's widths; a failed precinct fails the decode instead of crashing | — |
 | Malformed streams | `fedabb2` | Bounded table lookups, saturating arithmetic, checked slice headers, unverified geometries refused; the decoder no longer flagged unsupported | — |
 | Camera list | `f3d2bc3` | The Z 6III, Z 8, Z 9 and Z f without the note that HE and HE* aren't supported | — |
-| Model aliases, reentrant | `2a32db1` | `GetNormalizedModel` kept the alias it was matching in a static every LibRaw in a process shares, so identifications running at once could copy another camera's alias: Redlamp's decode service once named an OM-1 Mark II's model COOLPIX 900 ([pdcgomes/redlamp#444](https://github.com/pdcgomes/redlamp/issues/444)) | Fixed on master in [`1a8fd32`](https://github.com/LibRaw/LibRaw/commit/1a8fd32ed6) (15 October 2026), on the same line. The line here now reads as master's, so master merges without a conflict; the row goes with that merge |
 | The bench | `redlamp/bench/` | Checks the decoder on samples of every body that writes HE files, against Adobe DNG Converter's decode, and for data races under ThreadSanitizer (`c6f39d6`) | — |
+
+Upstream has taken one change: the model aliases' race (`2a32db1`, [pdcgomes/redlamp#444](https://github.com/pdcgomes/redlamp/issues/444)), in which identifications running at once could copy another camera's alias. Master fixed it in [`1a8fd32`](https://github.com/LibRaw/LibRaw/commit/1a8fd32ed6) (15 October 2026) on the same line, merged here in `8a064e1`, so the branch now has master's line.
 
 ## The bench
 
@@ -48,3 +49,5 @@ When LibRaw's own HE decoder lands on master or in a snapshot, the merge conflic
 ## Findings not yet shared upstream
 
 These are for the owner to post, or not: on LibRaw#826, the Z50 II's crash and corruption and their causes, the static layout's race, and the fuzzing crash in `ver_lift_lb_step`, with the fixes above; on [dnglab#835](https://github.com/dnglab/dnglab/pull/835), its red 4.5% to 8.9% too strong against lossless shots of the same scenes. The race on `GetNormalizedModel`'s static alias pointer needs no post: master fixed it in `1a8fd32`.
+
+On master, [`2caab57`](https://github.com/LibRaw/LibRaw/commit/2caab57e26) gives the EOS R50 V's colour data (sub-version 65) offsets of its own, but tests `ColorDataSubVer == 65` before anything has read that version from the block, so the branch is never taken on a file's first parse. The CC0 R50 V sample on raw.pixls.us still gets the R6 Mark II's layout: makernote black levels of 0, 33, 107 and 71 and white levels of 138 and 153, where its masked photosites sit at 512. With the version read before the test, the new offsets give black levels of 512 and white levels of 11535 and 11708, but that branch doesn't read the as-shot white balance (`AsShot_Auto_MeasuredWB`, which the R1's and R5 Mark II's case calls), so `cam_mul` comes out empty.
