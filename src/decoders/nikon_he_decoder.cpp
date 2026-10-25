@@ -18,7 +18,6 @@ it under the terms of the one of two licenses as you choose:
 // Keep decoder headers before dcraw_defs.h, which defines width and height as
 // macros.
 #include "nikon_he/nikon_he_decode.h"
-#include "nikon_he/nikon_he_iqx_iqp_lut_data.h"
 #include "nikon_he/nikon_he_gtli_table.h"
 #include "nikon_he/nikon_he_picture_header.h"
 
@@ -100,7 +99,8 @@ void LibRaw::nikon_he_load_raw()
     // The transfer curve, from the B, A and C parameters in the picture header's
     // extension, stored as 4 * raw14 for the decoder's final two-bit shift. Right
     // shifts are floor divisions, negative values included. A stream without the
-    // extension isn't one of Nikon's.
+    // extension isn't one of Nikon's. The table has kLutSize entries, the range
+    // the decoder clamps its lookups to.
     if (!ph.has_vendor_tail) {
         throw LIBRAW_EXCEPTION_UNSUPPORTED_FORMAT;
     }
@@ -110,8 +110,8 @@ void LibRaw::nikon_he_load_raw()
         const int64_t B = ((int64_t)(t[3] & 15) << 8) | t[4];
         const int64_t A = ((int64_t)(t[7] & 3) << 16) | ((int64_t)t[8] << 8) | t[9];
         const int64_t C = ((int64_t)t[10] << 8) | t[11];
-        transfer.resize(nikon_he::kIqxIqpLutSize);
-        for (int i = 0; i < nikon_he::kIqxIqpLutSize; ++i) {
+        transfer.resize(nikon_he::kLutSize);
+        for (int i = 0; i < nikon_he::kLutSize; ++i) {
             const int64_t d = (i < 65535 ? i : 65535) - C;
             int64_t q;
             if (d < 0) {
