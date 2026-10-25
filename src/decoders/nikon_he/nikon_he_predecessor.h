@@ -23,9 +23,9 @@ it under the terms of the one of two licenses as you choose:
 //   sb 12 (LL, LB 4): prev_band = sb 23 from the PREVIOUS precinct
 //   sb 23 (LL, LB 7): prev_band = sb 12 from the CURRENT precinct
 //
-// The rotation buffer swaps at each precinct boundary so that sb 12's
-// "previous" rotates between the buffer holding last precinct's sb 23
-// and the buffer being filled by the current precinct's sb 12.
+// sb 23 saves into the buffer sb 12 reads as its "previous", so it carries
+// over to the next precinct; sb 12 saves into the buffer sb 23 reads, which
+// is zeroed at each precinct boundary.
 //
 // All other sub-bands use zero-prediction (mode 0x71): prev = 0, so no
 // cross-band state is needed — but GCLI values are still saved for
@@ -42,20 +42,14 @@ it under the terms of the one of two licenses as you choose:
 
 #include "nikon_he_subband_config.h"
 #include <cstdint>
+#include <vector>
 
 namespace nikon_he {
 
 class PrecinctPredecessorState {
 public:
-    PrecinctPredecessorState() = default;
-
-    // Initialize storage based on sub-band layout.
-    // Must be called once before any other methods.
-    // Allocates: sum(ng[i]) uint8_t for GCLI vectors + rotation buffers.
-    void init(const SubbandConfig config[26]);
-
-    // Free allocated storage.
-    void destroy();
+    // Sizes the zeroed GCLI storage from the sub-band layout.
+    explicit PrecinctPredecessorState(const SubbandConfig config[26]);
 
     // Get the "previous band" GCLI values for a sub-band.
     // For sb 12: returns sb 23's GCLIs from the previous precinct.
@@ -85,21 +79,24 @@ public:
     void reset_gcli_state(const SubbandConfig config[26]);
 
 private:
-    // Per-sub-band GCLI storage. Each gcli_store_[i] points to a
-    // buffer of config[i].ng uint8_t.
-    uint8_t* gcli_store_[26] = {};
+    // The saved GCLIs of sub-band sb: config[sb].ng bytes, or nullptr when
+    // the sub-band has no groups. Sub-bands 12 and 23 save into the rotation
+    // buffers rather than into gcli_store_.
+    uint8_t* gcli_store(int sb);
 
-    // Number of groups per sub-band (set in init).
+    // Per-sub-band GCLI storage, config[i].ng bytes each. Empty for sb 12
+    // and sb 23.
+    std::vector<uint8_t> gcli_store_[26];
+
+    // Number of groups per sub-band.
     int ng_[26] = {};
 
-    // Rotation buffers for sb 12 / sb 23 cross-band prediction.
+    // Rotation buffers for sb 12 / sb 23 cross-band prediction, each
+    // max(config[12].ng, config[23].ng) bytes.
     // rotation_buf_a_ holds previous precinct's sb 23 → current sb 12 prev.
     // rotation_buf_b_ holds current precinct's sb 12 → current sb 23 prev.
-    // At advance: buf_a = buf_b, buf_b = buf_a.
-    uint8_t* rotation_buf_a_ = nullptr;  // sb 23 → for sb 12 prev
-    uint8_t* rotation_buf_b_ = nullptr;  // sb 12 → for sb 23 prev
-
-    int rotation_buf_size_ = 0;  // max(config[12].ng, config[23].ng)
+    std::vector<uint8_t> rotation_buf_a_;  // sb 23 → for sb 12 prev
+    std::vector<uint8_t> rotation_buf_b_;  // sb 12 → for sb 23 prev
 
     // Fully-insignificant flags.
     bool fully_insig_[26] = {};

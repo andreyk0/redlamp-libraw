@@ -27,6 +27,7 @@ it under the terms of the one of two licenses as you choose:
 #include "nikon_he_predict_lut.h"
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 namespace nikon_he {
 
@@ -170,34 +171,33 @@ PrecinctDecodeResult decode_precinct(
             const uint8_t* prev_gcli = pred_state.get_previous_gcli(sb);
 
             // 3. Decode GCLIs.
-            uint8_t* gcli_out = new uint8_t[ng];
+            std::vector<uint8_t> gcli_out(ng);
             if (sizes.lb_f20_sign[lb]) {
                 // Raw GCLI: an absolute four-bit value per group, no prediction.
                 for (int group = 0; group < ng; ++group)
                     gcli_out[group] = static_cast<uint8_t>(gcli_reader.read_bits(4));
             } else if (!decode_gcli_values(sig_reader, gcli_reader, dpb_mode,
                                            ng, gtli, predict_lut,
-                                           prev_gcli, gcli_out)) {
-                delete[] gcli_out;
+                                           prev_gcli, gcli_out.data())) {
                 return result;
             }
 
             // 4. Unpack coef magnitudes.
             int coeff_count = ng * 4;
-            int32_t* coeffs = new int32_t[coeff_count];
-            unpack_coefficient_magnitudes(data_reader, gcli_out, gtli,
-                                          ng, coeffs);
+            std::vector<int32_t> coeffs(coeff_count);
+            unpack_coefficient_magnitudes(data_reader, gcli_out.data(), gtli,
+                                          ng, coeffs.data());
 
             // 5. Sign bits.
-            apply_sign_bits(sign_reader, coeffs, coeff_count);
+            apply_sign_bits(sign_reader, coeffs.data(), coeff_count);
 
             // 6. Dequantize.
             bool is_ll = (sb == 12 || sb == 23);
-            dequantize_coefficient_array(coeffs, coeff_count, gcli_out,
+            dequantize_coefficient_array(coeffs.data(), coeff_count, gcli_out.data(),
                                          ng, gtli, is_ll);
 
             // 7. Persist GCLIs for prediction.
-            pred_state.save_gcli(sb, gcli_out);
+            pred_state.save_gcli(sb, gcli_out.data());
             bool all_zero = true;
             for (int i = 0; i < coeff_count; i++) {
                 if (coeffs[i] != 0) { all_zero = false; break; }
@@ -206,11 +206,8 @@ PrecinctDecodeResult decode_precinct(
 
             // 8. Scatter into bufA or bufB at x24*4 offset.
             int32_t* target_buf = (config[sb].buffer_idx == 0) ? bufA : bufB;
-            std::memcpy(target_buf + config[sb].x24 * 4, coeffs,
+            std::memcpy(target_buf + config[sb].x24 * 4, coeffs.data(),
                         static_cast<size_t>(coeff_count) * sizeof(int32_t));
-
-            delete[] gcli_out;
-            delete[] coeffs;
 
             result.total_sub_bands_decoded++;
         }

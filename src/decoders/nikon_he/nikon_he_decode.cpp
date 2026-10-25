@@ -26,6 +26,7 @@ it under the terms of the one of two licenses as you choose:
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
 
 namespace nikon_he {
 
@@ -60,7 +61,7 @@ HeDecodeResult decode_nikon_he_image(
     // 2. Build prediction LUT.
     const uint8_t* predict_lut = build_prediction_lookup_table();
 
-    // 3. Predecessor state is initialized fresh PER TILE (inside the loop).
+    // 3. Predecessor state is constructed fresh PER TILE (inside the loop).
     //    Each tile has its own cross-precinct prediction context; the
     //    2-precinct overlap doesn't carry pred state.
 
@@ -80,8 +81,8 @@ HeDecodeResult decode_nikon_he_image(
     int kband = compute_kband(li);
 
     // Collect FILE-precinct pointers/sizes (stride 16, not 18).
-    const uint8_t** prec_ptrs = new const uint8_t*[n_file_precincts]();
-    size_t* prec_sizes = new size_t[n_file_precincts]();
+    std::vector<const uint8_t*> prec_ptrs(n_file_precincts, nullptr);
+    std::vector<size_t> prec_sizes(n_file_precincts, 0);
 
     const uint8_t* cursor = precinct_data;
     size_t remaining = precinct_stream_size;
@@ -113,17 +114,17 @@ HeDecodeResult decode_nikon_he_image(
     }
 
     // 5. Allocate image-wide tile_coeff_buf and carry buffers.
-    int32_t* tile_coeff_buf = new int32_t[static_cast<size_t>(n_tiles) * kStripesPerTile * stripe_ints]();
-    int32_t* step1_scratch = new int32_t[static_cast<size_t>(n_tiles) * kStripesPerTile * stripe_ints]();
-    int32_t* overflow = new int32_t[2 * stripe_ints]();
+    const size_t image_stripe_ints = static_cast<size_t>(n_tiles) * kStripesPerTile * stripe_ints;
+    std::vector<int32_t> tile_coeff_buf(image_stripe_ints, 0);
+    std::vector<int32_t> step1_scratch(image_stripe_ints, 0);
+    std::vector<int32_t> overflow(static_cast<size_t>(2) * stripe_ints, 0);
 
     // 6. PASS 1: decode all tiles into tile_coeff_buf. step1/step2 need
     //    cross-tile reads to find next/prev tile's stripes, so all
     //    decode_tile calls must run BEFORE any step1 call.
     int loop_n_tiles = n_tiles;
     for (int t = 0; t < loop_n_tiles; t++) {
-        PrecinctPredecessorState pred_state;
-        pred_state.init(config);
+        PrecinctPredecessorState pred_state(config);
         bool is_first = (t == 0);
         bool is_last = (t == n_tiles - 1);
 
@@ -136,12 +137,12 @@ HeDecodeResult decode_nikon_he_image(
         }
 
         TileDecodeResult tile_result = decode_tile(
-            prec_ptrs + tile_prec_base,
-            prec_sizes + tile_prec_base,
+            prec_ptrs.data() + tile_prec_base,
+            prec_sizes.data() + tile_prec_base,
             image_width, config, pred_state, predict_lut,
-            tile_coeff_buf, t, overflow,
+            tile_coeff_buf.data(), t, overflow.data(),
             is_first, is_last, prec_count);
-        if (!tile_result.success) goto cleanup;
+        if (!tile_result.success) return result;
         result.tiles_decoded++;
         result.total_precincts += tile_result.precincts_decoded;
     }
@@ -155,13 +156,13 @@ HeDecodeResult decode_nikon_he_image(
                      : kStripesPerTile;
         int w_cols = image_width / 2;
 
-        int32_t* tile_stripes = tile_coeff_buf + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
+        int32_t* tile_stripes = tile_coeff_buf.data() + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
         const int32_t* p1 = tile_stripes + kband;     // LL
         const int32_t* p2_orig = tile_stripes;         // LH
         const int32_t* p3 = tile_stripes + 3 * kband;  // HH
         const int32_t* p4 = tile_stripes + 2 * kband;  // HL
 
-        int32_t* step1_L = step1_scratch + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
+        int32_t* step1_L = step1_scratch.data() + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
         int32_t* step1_H = step1_L + kband;
 
         step1_merge_4_to_2(p1, p2_orig, p3, p4,
@@ -182,10 +183,10 @@ HeDecodeResult decode_nikon_he_image(
                      : kStripesPerTile;
         int w_cols = image_width / 2;
 
-        int32_t* tile_stripes = tile_coeff_buf + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
+        int32_t* tile_stripes = tile_coeff_buf.data() + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
         const int32_t* p1 = tile_stripes + kband;
         const int32_t* p4 = tile_stripes + 2 * kband;
-        int32_t* step1_L = step1_scratch + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
+        int32_t* step1_L = step1_scratch.data() + static_cast<size_t>(t) * kStripesPerTile * stripe_ints;
         int32_t* step1_H = step1_L + kband;
         int tile_row_start = t * 64;
 
@@ -198,14 +199,6 @@ HeDecodeResult decode_nikon_he_image(
     }
 
     result.success = true;
-
-cleanup:
-    delete[] prec_ptrs;
-    delete[] prec_sizes;
-    delete[] tile_coeff_buf;
-    delete[] step1_scratch;
-    delete[] overflow;
-
     return result;
 }
 
