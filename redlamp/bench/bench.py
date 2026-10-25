@@ -42,7 +42,10 @@ FLAGS = {
 TOOLS = ("dump_raw", "fuzz_he", "concurrent")
 ADOBE = pathlib.Path("/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter")
 SAN_ENV = {"ASAN_OPTIONS": "halt_on_error=1:detect_leaks=0", "UBSAN_OPTIONS": "print_stacktrace=1:report_error_type=1"}
-TSAN_ENV = {"TSAN_OPTIONS": "halt_on_error=0"}
+# With TZ unset, glibc's mktime frees and re-copies its cached zone name on every call, under a
+# lock ThreadSanitizer can't see, which it reports as races in LibRaw's EXIF timestamps. A set TZ
+# leaves the cache alone.
+TSAN_ENV = {"TSAN_OPTIONS": "halt_on_error=0", "TZ": "UTC"}
 # Gates. Colour balance: red's and blue's gain over green against the lossless shot, for pairs
 # shot at the same exposure whose block means correlate at least SIMILAR (the Z 6III's leaves
 # move between shots). Detail: on pairs that line up exactly (no shift, correlation of at
@@ -128,8 +131,9 @@ def build(variants=("opt", "san", "tsan")):
         if errors:
             sys.exit("\n".join(errors))
         lib = out / "libraw.a"
-        subprocess.run(["libtool", "-static", "-o", str(lib), *map(str, sorted(objs.glob("*.o")))],
-                       check=True, capture_output=True)
+        lib.unlink(missing_ok=True)  # ar adds to an existing archive rather than replacing it
+        archive = ["libtool", "-static", "-o", str(lib)] if sys.platform == "darwin" else ["ar", "rcs", str(lib)]
+        subprocess.run([*archive, *map(str, sorted(objs.glob("*.o")))], check=True, capture_output=True)
         for tool in TOOLS:
             subprocess.run(["clang++", *flags, str(BENCH / "tools" / f"{tool}.cpp"), str(lib), "-lz",
                             "-o", str(out / tool)], check=True)

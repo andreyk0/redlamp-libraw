@@ -5,6 +5,7 @@
 // Mutations come from one generator seeded once, so an iteration replays exactly.
 #include "libraw/libraw.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
