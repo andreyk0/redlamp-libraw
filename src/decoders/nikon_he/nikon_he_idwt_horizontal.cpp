@@ -190,7 +190,6 @@ void idwt_horizontal_pass(
         // 2*lift_LB*4 with size memcpy_LB*4; LB 3 follows.)
         int32_t* lb0_in = const_cast<int32_t*>(buf) + 0;
         int32_t* lb1_in = const_cast<int32_t*>(buf) + lift_st;
-        int32_t* lb2_in = const_cast<int32_t*>(buf) + 2 * lift_st;                  // memcpy
         int32_t* lb3_in = const_cast<int32_t*>(buf) + 2 * lift_st + memcpy_LB * 4;  // = passA_stride*1 ints in
 
         idwt53_horizontal_lift_all(lb0_in, n, passA_levels,

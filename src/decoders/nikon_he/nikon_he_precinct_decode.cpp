@@ -25,26 +25,10 @@ it under the terms of the one of two licenses as you choose:
 #include "nikon_he_dequantize.h"
 #include "nikon_he_gtli_table.h"
 #include "nikon_he_predict_lut.h"
-#include <algorithm>
 #include <cstring>
 #include <vector>
 
 namespace nikon_he {
-
-// LB-to-sub-band mapping:
-//   LB 0: sb 0-5    LB 1: sb 6-11   LB 2: sb 12
-//   LB 3: sb 13-18  LB 4: sb 19-20  LB 5: sb 21-22
-//   LB 6: sb 23     LB 7: sb 24-25
-static const int kLbForSb[26] = {
-    0, 0, 0, 0, 0, 0,    // sb 0-5
-    1, 1, 1, 1, 1, 1,    // sb 6-11
-    2,                    // sb 12
-    3, 3, 3, 3, 3, 3,    // sb 13-18
-    4, 4,                 // sb 19-20
-    5, 5,                 // sb 21-22
-    6,                    // sb 23
-    7, 7,                 // sb 24-25
-};
 
 // Mapping from sub-band to Dpb index (16 primary + 12 secondary = 28).
 // Primary (sb 0-15): Dpb[0-15]; Secondary (sb 16-25): Dpb[16-25].
@@ -54,45 +38,9 @@ static int sb_to_dpb_index(int sb) {
     return 0;
 }
 
-void compute_subband_byte_slice(
-    int lb_sig_remaining,
-    int lb_gcli_remaining,
-    int lb_data_remaining,
-    int lb_sign_remaining,
-    int total_ng_in_lb,
-    int sb_ng,
-    int& out_sig_bytes,
-    int& out_gcli_bytes,
-    int& out_data_bytes,
-    int& out_sign_bytes) {
-
-    // If this is the last sb in the LB, get all remaining.
-    if (total_ng_in_lb <= sb_ng) {
-        out_sig_bytes  = lb_sig_remaining;
-        out_gcli_bytes = lb_gcli_remaining;
-        out_data_bytes = lb_data_remaining;
-        out_sign_bytes = lb_sign_remaining;
-        return;
-    }
-
-    // Proportional allocation based on ng.
-    out_sig_bytes  = (lb_sig_remaining * sb_ng) / total_ng_in_lb;
-    out_gcli_bytes = (lb_gcli_remaining * sb_ng) / total_ng_in_lb;
-    out_data_bytes = (lb_data_remaining * sb_ng) / total_ng_in_lb;
-    out_sign_bytes = (lb_sign_remaining * sb_ng) / total_ng_in_lb;
-
-    // Ensure minimum for sig+gcli: at least ceil(sb_ng/8) sig bits
-    // plus at least 1 byte for gcli.
-    int min_sig = (sb_ng + 7) / 8;
-    if (out_sig_bytes < min_sig) {
-        out_sig_bytes = std::min(min_sig, lb_sig_remaining);
-    }
-}
-
 PrecinctDecodeResult decode_precinct(
     const uint8_t* precinct_data,
     size_t precinct_size,
-    int image_width,
     const SubbandConfig config[26],
     PrecinctPredecessorState& pred_state,
     const uint8_t* predict_lut,
@@ -110,7 +58,7 @@ PrecinctDecodeResult decode_precinct(
 
     // Check for precinct-16 GCLI reset
     if (should_reset_gcli(pred_state.precinct_index(), sizes.Bp, sizes.Br)) {
-        pred_state.reset_gcli_state(config);
+        pred_state.reset_gcli_state();
     }
 
     // 2. Walk LBs in order 0..7; within each LB, decode sub-bands in
@@ -140,7 +88,7 @@ PrecinctDecodeResult decode_precinct(
         BitReader data_reader(data_buf, sizes.lb_data_bytes[lb]);
         BitReader sign_reader(sign_buf, sizes.lb_sign_bytes[lb]);
 
-        // Sub-band range for this LB (matches kLbForSb[]).
+        // Sub-band range for this LB.
         int sb_start, sb_end;
         switch (lb) {
             case 0: sb_start = 0;  sb_end = 6;  break;
@@ -192,9 +140,8 @@ PrecinctDecodeResult decode_precinct(
             apply_sign_bits(sign_reader, coeffs.data(), coeff_count);
 
             // 6. Dequantize.
-            bool is_ll = (sb == 12 || sb == 23);
             dequantize_coefficient_array(coeffs.data(), coeff_count, gcli_out.data(),
-                                         ng, gtli, is_ll);
+                                         ng, gtli);
 
             // 7. Persist GCLIs for prediction.
             pred_state.save_gcli(sb, gcli_out.data());

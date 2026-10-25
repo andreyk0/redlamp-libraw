@@ -43,27 +43,11 @@ struct PrecinctDecodeResult {
 PrecinctDecodeResult decode_precinct(
     const uint8_t* precinct_data,
     size_t precinct_size,
-    int image_width,
     const SubbandConfig config[26],
     PrecinctPredecessorState& pred_state,
     const uint8_t* predict_lut,
     int32_t* bufA,
     int32_t* bufB);
-
-// Compute byte slicing for one sub-band within an LB.
-// Given the LB totals and remaining bytes, allocate this sub-band's
-// portion of sig, gcli, data, sign substreams.
-void compute_subband_byte_slice(
-    int lb_sig_remaining,
-    int lb_gcli_remaining,
-    int lb_data_remaining,
-    int lb_sign_remaining,
-    int total_ng_in_lb,
-    int sb_ng,
-    int& out_sig_bytes,
-    int& out_gcli_bytes,
-    int& out_data_bytes,
-    int& out_sign_bytes);
 
 }  // namespace nikon_he
 

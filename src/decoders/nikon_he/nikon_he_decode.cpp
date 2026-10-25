@@ -86,7 +86,6 @@ HeDecodeResult decode_nikon_he_image(
 
     const uint8_t* cursor = precinct_data;
     size_t remaining = precinct_stream_size;
-    int n_walked = 0;
 
     for (int p = 0; p < n_file_precincts; p++) {
         if (remaining < 3) break;
@@ -99,7 +98,6 @@ HeDecodeResult decode_nikon_he_image(
         prec_sizes[p] = sz;
         cursor += sz + 12;
         remaining -= sz + 12;
-        n_walked++;
 
         // Every 16th precinct ends a slice; the next opens with JPEG XS's 6-byte
         // slice header: SLH (FF20), its length (4) and the slice's index.
@@ -126,7 +124,6 @@ HeDecodeResult decode_nikon_he_image(
     for (int t = 0; t < loop_n_tiles; t++) {
         PrecinctPredecessorState pred_state(config);
         bool is_first = (t == 0);
-        bool is_last = (t == n_tiles - 1);
 
         int tile_prec_base = t * 16;
         int prec_count = 0;
@@ -139,9 +136,9 @@ HeDecodeResult decode_nikon_he_image(
         TileDecodeResult tile_result = decode_tile(
             prec_ptrs.data() + tile_prec_base,
             prec_sizes.data() + tile_prec_base,
-            image_width, config, pred_state, predict_lut,
+            config, pred_state, predict_lut,
             tile_coeff_buf.data(), t, overflow.data(),
-            is_first, is_last, prec_count);
+            is_first, prec_count);
         if (!tile_result.success) return result;
         result.tiles_decoded++;
         result.total_precincts += tile_result.precincts_decoded;

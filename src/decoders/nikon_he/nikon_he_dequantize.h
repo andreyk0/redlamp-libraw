@@ -20,10 +20,8 @@ it under the terms of the one of two licenses as you choose:
 // The encoder truncates the bottom `gtli` bits of every coefficient.
 // The decoder reconstructs those bits using a deadzone-midpoint formula,
 // scaling each coefficient by a 16-entry constant table indexed by the
-// number of bit-planes actually encoded.
-//
-// LL bands (sub-bands 12 and 23) use a simpler formula: a fixed factor
-// instead of the deadzone table.
+// number of bit-planes actually encoded. Every sub-band, the LL bands 12 and 23
+// included, is dequantized this way.
 //
 // Z9 HE constants:
 //   w4_shift = 4   (image-wide tone shift)
@@ -50,7 +48,7 @@ constexpr int32_t kMidpointScaleTable[16] = {
 // Z9 HE image-wide tone shift.
 constexpr int kW4Shift = 4;
 
-// Dequantize one coefficient (non-LL).
+// Dequantize one coefficient.
 //   coefficient — signed raw coefficient from entropy decode
 //   gcli        — this group's GCLI value
 //   gtli        — this sub-band's GTLI (from the (Bp, Br) GTLI table)
@@ -58,21 +56,13 @@ int32_t dequantize_coefficient(int32_t coefficient,
                                int gcli,
                                int gtli);
 
-// Dequantize one LL-band coefficient (sb 12, sb 23).
-//   result = sign(coef) × (abs(coef) >> gtli) × ((1 << w4) + 1) << w4
-int32_t dequantize_ll_coefficient(int32_t coefficient,
-                                  int gcli,
-                                  int gtli);
-
 // Batch dequantize an array of coefficients for one sub-band.
-// For LL bands, pass is_ll_band = true.
 void dequantize_coefficient_array(
     int32_t* coefficients,
     int coefficient_count,
     const uint8_t* gcli_values,
     int num_groups,
-    int target_gtli,
-    bool is_ll_band);
+    int target_gtli);
 
 }  // namespace nikon_he
 

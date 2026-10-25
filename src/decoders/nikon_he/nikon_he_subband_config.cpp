@@ -144,13 +144,9 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& 
     //   memcpy LBs: memcpy_LB groups
     //
     // Within each LB, sub-bands are packed with round_up(ng, 8) spacing.
-
-    int lb_region[8] = {
-        lift_LB, lift_LB, memcpy_LB, lift_LB,   // LBs 0-3 (bufA)
-        lift_LB, lift_LB, memcpy_LB, lift_LB,   // LBs 4-7 (bufB)
-    };
-
-    // But x24 is buffer-local: bufA and bufB each accumulate independently.
+    //
+    // x24 is buffer-local: bufA and bufB each accumulate independently, with
+    // the same layout.
     // LB positions within bufA: LB 0 at x24=0, LB 1 at lift_LB, LB 2 at 2*lift_LB,
     //                           LB 3 at 2*lift_LB+memcpy_LB
     // LB positions within bufB: LB 4 at x24=0, LB 5 at lift_LB, LB 6 at 2*lift_LB,
@@ -158,9 +154,8 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& 
 
     // Track within-LB sb_x24 per LB separately.
     int lb_sb_x24[8] = {0};
-    // Track cumulative x24 base per LB within each buffer.
-    int bufA_lb_base[4] = {0, lift_LB, 2 * lift_LB, 2 * lift_LB + memcpy_LB};
-    int bufB_lb_base[4] = {0, lift_LB, 2 * lift_LB, 2 * lift_LB + memcpy_LB};
+    // x24 base of each buffer's LBs 0..3 (bufA's LBs 0-3, bufB's LBs 4-7).
+    const int buf_lb_base[4] = {0, lift_LB, 2 * lift_LB, 2 * lift_LB + memcpy_LB};
 
     std::memset(out, 0, sizeof(SubbandConfig) * 26);
 
@@ -173,15 +168,9 @@ void compute_subband_layout(int half_pass_W, SubbandConfig out[26], LayoutInfo& 
         cfg.buffer_idx = (d.lb >= 4) ? 1 : 0;
         cfg.layout_info = &layout_info;
 
-        int lb = d.lb;
-        if (cfg.buffer_idx == 0) {
-            cfg.x24 = bufA_lb_base[lb] + lb_sb_x24[lb];
-            lb_sb_x24[lb] += round_up(d.ng_val, 8);
-        } else {
-            int blb = lb - 4; // local LB index within bufB (0..3)
-            cfg.x24 = bufB_lb_base[blb] + lb_sb_x24[lb];
-            lb_sb_x24[lb] += round_up(d.ng_val, 8);
-        }
+        const int buffer_lb = d.lb % 4;  // the LB's index within its buffer
+        cfg.x24 = buf_lb_base[buffer_lb] + lb_sb_x24[d.lb];
+        lb_sb_x24[d.lb] += round_up(d.ng_val, 8);
     }
 
     // A packet's significance flags: one bit per significance group (8 code groups)

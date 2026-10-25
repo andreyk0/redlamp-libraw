@@ -66,7 +66,6 @@ static void run_one_ver_lift_loop(const int32_t* const x0_per_lb[4],
 TileDecodeResult decode_tile(
     const uint8_t* const* precinct_data,
     const size_t* precinct_sizes,
-    int image_width,
     const SubbandConfig config[26],
     PrecinctPredecessorState& pred_state,
     const uint8_t* predict_lut,
@@ -74,7 +73,6 @@ TileDecodeResult decode_tile(
     int tile_index,
     int32_t* overflow_carry,
     bool is_first_tile,
-    bool is_last_tile,
     int precinct_count) {
 
     TileDecodeResult result = {0, false};
@@ -85,7 +83,6 @@ TileDecodeResult decode_tile(
     const int lift_st       = li->lift_LB * 4;                // = kBand
     const int memcpy_st     = li->memcpy_LB * 4;
     const int kBand         = lift_st;
-    (void)is_last_tile;
 
     // Per-tile state carry buffers (one int32 region per LB component).
     std::vector<int32_t> x2_carry(4 * lift_st, 0);
@@ -169,7 +166,7 @@ TileDecodeResult decode_tile(
         std::memset(bufA.data(), 0, bufA.size() * sizeof(int32_t));
         std::memset(bufB.data(), 0, bufB.size() * sizeof(int32_t));
         PrecinctDecodeResult prec = decode_precinct(
-            precinct_data[p], precinct_sizes[p], image_width,
+            precinct_data[p], precinct_sizes[p],
             config, pred_state, predict_lut, bufA.data(), bufB.data());
         if (!prec.success) return result;
         result.precincts_decoded++;

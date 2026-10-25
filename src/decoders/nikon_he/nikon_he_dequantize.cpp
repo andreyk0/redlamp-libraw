@@ -54,30 +54,13 @@ int32_t dequantize_coefficient(int32_t coefficient,
     return (coefficient < 0) ? -result : result;
 }
 
-int32_t dequantize_ll_coefficient(int32_t coefficient,
-                                  int gcli,
-                                  int gtli) {
-    if (coefficient == 0 || gcli <= gtli) {
-        return 0;
-    }
-    uint32_t magnitude = static_cast<uint32_t>(std::abs(coefficient)) >> gtli;
-    const int64_t factor = (1 << kW4Shift) + 1;    // = 17
-    const int32_t result = saturate(static_cast<int64_t>(magnitude) * factor * (1 << kW4Shift));
-    return (coefficient < 0) ? -result : result;
-}
-
 void dequantize_coefficient_array(
     int32_t* coefficients,
     int coefficient_count,
     const uint8_t* gcli_values,
     int num_groups,
-    int target_gtli,
-    bool is_ll_band) {
+    int target_gtli) {
 
-    // ALL sub-bands (including LL bands sb 12 and sb 23) use the same
-    // uniform dequant. The is_ll_band parameter is ignored — kept for
-    // API compatibility.
-    (void)is_ll_band;
     for (int g = 0; g < num_groups; ++g) {
         int gcli = static_cast<int>(gcli_values[g]);
         for (int c = 0; c < 4; ++c) {
