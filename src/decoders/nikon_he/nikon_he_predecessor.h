@@ -76,7 +76,7 @@ public:
 
     // Reset all GCLI state to zero. Called on precinct-16 boundary
     // when the reset condition is met.
-    void reset_gcli_state(const SubbandConfig config[26]);
+    void reset_gcli_state();
 
 private:
     // The saved GCLIs of sub-band sb: config[sb].ng bytes, or nullptr when

@@ -120,7 +120,7 @@ void PrecinctPredecessorState::advance_precinct() {
     // sb 23 saves into rotation_buf_a_ → still has last precinct's sb 23
 }
 
-void PrecinctPredecessorState::reset_gcli_state(const SubbandConfig config[26]) {
+void PrecinctPredecessorState::reset_gcli_state() {
     for (int i = 0; i < 26; i++) {
         uint8_t* store = gcli_store(i);
         if (store && ng_[i] > 0) {

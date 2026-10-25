@@ -78,21 +78,19 @@ struct TileDecodeResult {
 //
 // Parameters:
 //   precinct_data[18] — array of (pointer, size) for each precinct's raw data
-//   image_width       — full image width in pixels
 //   config[26]        — sub-band layout
-//   pred_state        — predecessor state (shared across tiles)
+//   pred_state        — predecessor state, fresh for each tile
 //   predict_lut       — prediction LUT
 //   tile_coeff_buf          — output buffer (image-wide, this tile's 32 stripes written)
 //   tile_index        — 0-based tile index
 //   overflow_carry    — 2 * bufStripeInts int32_t for cross-tile carry (in/out)
 //   is_first_tile     — true for tile 0 (path A init)
-//   is_last_tile      — true for final tile (may have < 18 precincts)
-//   precinct_count    — number of precincts in this tile (≤ 18)
+//   precinct_count    — number of precincts in this tile (≤ 18; the final
+//                       tile may have fewer)
 //
 TileDecodeResult decode_tile(
     const uint8_t* const* precinct_data,
     const size_t* precinct_sizes,
-    int image_width,
     const SubbandConfig config[26],
     PrecinctPredecessorState& pred_state,
     const uint8_t* predict_lut,
@@ -100,7 +98,6 @@ TileDecodeResult decode_tile(
     int tile_index,
     int32_t* overflow_carry,
     bool is_first_tile,
-    bool is_last_tile,
     int precinct_count);
 
 }  // namespace nikon_he
