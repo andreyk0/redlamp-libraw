@@ -51,7 +51,7 @@ struct HeDecodeResult {
 //   precinct_stream_size — total size of the precinct stream
 //   image_width     — full image width in pixels (e.g. 8256)
 //   image_height    — full image height in pixels (e.g. 5504)
-//   lut             — tone-curve LUT (kLutSize entries, from iqx_iqp_lut_data)
+//   lut             — tone-curve LUT, kLutSize entries
 //   out_bayer       — output uint16 RGGB Bayer buffer
 //                     (image_width × image_height uint16_t)
 //
